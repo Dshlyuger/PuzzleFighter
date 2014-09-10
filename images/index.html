@@ -1,4 +1,4 @@
-<script type="text/javascript" src="http://myapp.herokuapp.com/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
 
 <html onkeydown="evaluateKeyPress(event)">
 
@@ -33,7 +33,7 @@ window.onbeforeunload = function(){
 }
 
 
- socket = io.connect('http://myapp.herokuapp.com/');
+ socket = io.connect('http://puzzleroyale.herokuapp.com/');
  multiPlayer=false;
  puzzleMove = new Audio('puzzlemove.wav');
  breakPiece = new Audio('breakPiece.wav');

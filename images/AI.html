@@ -1,4 +1,4 @@
-<script src="http://localhost:8080/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
 
 <html>
 
@@ -13,7 +13,7 @@
     <script type="text/javascript ">
         // controls whether or not the draw function changes the player piece's y coordinates at the start of the game this shouldn't happen if player moves along
 
-var socket = io.connect('http://localhost:8080');
+ socket = io.connect('http://puzzleroyale.herokuapp.com/');
 
 socket.emit('singlePlayer');
 console.log("bullcrap");
