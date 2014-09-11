@@ -8,19 +8,21 @@
 
 <img src="Puzzle-Royalesecond.png" >
 <img id="Lose" src="AI-Wins.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
-<img id="Win" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
+<img id="Lose" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
+
+<div  style="position: absolute; top: 8%; left: 40%; display:none"  > If a player connects while your waiting you'll play against them, if not you can always play against the AI until someone arrives. </div>
 
 <ul>
   <li><a href="" class="round green" onclick="singlePlayer();return false;">VS AI<span class="round">Try your luck against the AI.</span></a></li>
-  <li><a id="vsPlayer" href="#" class="round red" onclick="document.getElementById('vsPlayer').innerHTML='Waiting' multiplayer=true;"> VS Player<span class="round">Play against a live opponent. You may need to wait for someone else to start the game </span></a></li>
-    <li><a href="#" class="round yellow" onclick="reset()"> Reset<span class="round">Play again after a win/loss or reset a current game. </span></a></li>
-  <li id= "Waiting" style="visibility:hidden"><a href="#" class="round yellow">Waiting...<span class="round">May take a while for another play to turn up if you get bo red try playing the AI</span></a></li>
+  <li><a id="vsPlayer"  class="round red" onclick="document.getElementById('vsPlayer').innerHTML='Waiting' multiplayer=true;"> VS Player <span class="round">When someone else logs on you'll be matched against them, until then try your luck against the opponent.</span></a></li>
+    <li><a href="#" class="round yellow" onclick="reset()"> Reset<span class="round">Play again after a win/loss or reset a current game to get back in the queue for multiplayer. </span></a></li>
+  <li id= "Waiting" style="visibility:hidden"><a href="#" class="round yellow">Waiting...<span class="round">If a player connects you'll play against them till then you can try your luck against the AI</span></a></li>
 </ul> 
 
     
 </head>
 
-<body style="background-color:#380B61">
+<body >
 
     <div id="playerElements"></div>
     <div id="opponentElements"></div>
@@ -1560,6 +1562,8 @@ location.reload();
      var randomMove = availableMoves[Math.floor((Math.random() * availableMoves.length))];
      var keyPresses = generateKeyPresses(randomMove);
   
+
+
      var evaluateKeyPresses = setInterval(
          function() {
 
