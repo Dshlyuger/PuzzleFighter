@@ -4,20 +4,19 @@ var app = express()
   , server = require('http').createServer(app)
   , io = require('socket.io').listen(server)
 
-  var game=new game();
 
-  function game(){
+games=[];
+gameNumber=0;
+
+  var game= function(){
+  number=0;
   socketid1="";
   socketid2="";
  screenOneWidth=0;
  screenOneHeight=0;
  screenTwoWidth=0;
  screenTwoHeight=0;
- screenOneGrid=[];
- screenTwoGrid=[];
- screenOnePlayerpiece=null;
- screenTwoPlayerpiece=null;
-  
+ singlePlayer=false;
   }
 
  var numPlayers=0;
@@ -26,86 +25,94 @@ var app = express()
 app.use(express.compress()); 
 app.use(express.static(__dirname + '/images'));
 
-server.listen((process.env.PORT || 5000));
+server.listen(8080);
 
 
 io.sockets.on('connection', function (socket) {
-numPlayers++;
-console.log(numPlayers);
-	if(numPlayers==2){
-	game.socketid2=socket.id;
-	console.log(game.socketid2);
 
-	io.sockets.socket(game.socketid1).emit('matched', "1");
-	io.sockets.socket(game.socketid2).emit('matched', "2");
+numPlayers++;
+
+
+	if(numPlayers % 2 ==0 ){
+
+	games[gameNumber].socketid2=socket.id;
+	console.log(gameNumber);
+	console.log(game)
+	
+	
+	io.sockets.socket(games[gameNumber].socketid1).emit('matched', gameNumber);
+	io.sockets.socket(games[gameNumber].socketid2).emit('matched', gameNumber);
+	gameNumber++;
+
 	}
 	else{
-	game.socketid1=socket.id;
-	//console.log(game.socketid1);
+	games[gameNumber]=new game();
+	games[gameNumber].socketid1=socket.id;
 	}
 
 
 			socket.on('singlePlayer',function(){
-			singlePlayer=true;
+			game.singlePlayer=true;
 		});
 
 			socket.on('reset',function(){
-			numPlayers=0;
-			game.screenOneWidth=0;
-			game.screenOneHeight=0;
-			game.screenTwoWidth=0;
-			game.screenTwoHeight=0;
+		
 
 		});
 
 
-			socket.on('playerOneLost',function(){
-			io.sockets.socket(game.socketid2).emit('gameOver');	
+			socket.on('playerOneLost',function(gameNumber){
+			io.sockets.socket(games[gameNumber].socketid2).emit('gameOver');	
 	});
 
-			socket.on('aiLost',function(){
-			io.sockets.socket(game.socketid1).emit('aiLost');
-			console.log("pokas")
+			socket.on('aiLost',function(gameNumber){
+			io.sockets.socket(games[gameNumber].socketid1).emit('aiLost');
 	});
 
 
-			socket.on('initialized',function(id,innerWidth,innerHeight){
-				
-			if(game.socketid1==id){
-			game.screenOneWidth=innerWidth;
-			game.screenOneHeight=innerHeight;
+			socket.on('initialized',function(id,innerWidth,innerHeight,gameNumber){
+				console.log(gameNumber)
+				console.log(games[gameNumber]);
+		if(!games[gameNumber].singlePlayer){
+			if(games[gameNumber].socketid1==id){
+			games[gameNumber].screenOneWidth=innerWidth;
+			games[gameNumber].screenOneHeight=innerHeight;
 		//	console.log(game.screenOneWidth);
 			}
 			else{
-			game.screenTwoWidth=innerWidth;
-			game.screenTwoHeight=innerHeight;
+			games[gameNumber].screenTwoWidth=innerWidth;
+			games[gameNumber].screenTwoHeight=innerHeight;
 		//	console.log(game.screenTwoWidth);
 			}
-	});
-			socket.on('playerMove',function(id,grid,playerpiece){
-		//	console.log(playerpiece.image1);
-			if(game.socketid1==id){
-		console.log("blah");
-			game.screenOneGrid=grid;
-			game.screenOnePlayerpiece=playerpiece;	
-			io.sockets.socket(game.socketid2).emit('updateOtherPlayer',grid,playerpiece,game.screenOneWidth,game.screenOneHeight);
-			}
-			else{
+		}
+		else{
+			
+			games[gameNumber].screenOneWidth=innerWidth;
+			games[gameNumber].screenOneHeight=innerHeight;
+			games[gameNumber].screenTwoWidth=innerWidth;
+			games[gameNumber].screenTwoHeight=innerHeight;
 
-			game.screenOneGrid=grid;
-			game.screenOnePlayerpiece=playerpiece;
-			io.sockets.socket(game.socketid1).emit('updateOtherPlayer',grid,playerpiece,game.screenTwoWidth,game.screenTwoHeight);
+		}
+	});
+			socket.on('playerMove',function(id,grid,playerpiece,gameNumber){
+			
+			if(games[gameNumber].socketid1==id){
+
+			io.sockets.socket(games[gameNumber].socketid2).emit('updateOtherPlayer',grid,playerpiece,games[gameNumber].screenOneWidth,games[gameNumber].screenOneHeight);
+			}
+			else{		
+			io.sockets.socket(games[gameNumber].socketid1).emit('updateOtherPlayer',grid,playerpiece,games[gameNumber].screenTwoWidth,games[gameNumber].screenTwoHeight);
 			}
 			
 	});
 
-			socket.on('CollisionResult',function(id,tobeadded){
+			socket.on('CollisionResult',function(id,tobeadded,gameNumber){
 
-			if(game.socketid1==id){	
-			io.sockets.socket(game.socketid2).emit('registerCollisionResult', tobeadded);
+			if(games[gameNumber].socketid1==id){	
+			io.sockets.socket(games[gameNumber].socketid2).emit('registerCollisionResult', tobeadded);
 			}
 			else{
-			io.sockets.socket(game.socketid1).emit('registerCollisionResult', tobeadded);
+			io.sockets.socket(games[gameNumber].socketid1).emit('registerCollisionResult', tobeadded);
 			}
 			
 	});

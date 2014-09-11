@@ -1,4 +1,4 @@
-<script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
+<script src="http://localhost:8080/socket.io/socket.io.js"></script>
 
 <html>
 
@@ -13,10 +13,12 @@
     <script type="text/javascript ">
         // controls whether or not the draw function changes the player piece's y coordinates at the start of the game this shouldn't happen if player moves along
 
- socket = io.connect('http://puzzleroyale.herokuapp.com/');
+var socket = io.connect('http://localhost:8080');
 
-socket.emit('singlePlayer');
-console.log("bullcrap");
+
+  
+
+ gameNumber=-1;
  otherPlayerStillPlaying=true;
  id = socket.sessionid;
  situational = true;
@@ -54,8 +56,8 @@ console.log("bullcrap");
  socket.on('connect', function() {
      id = this.socket.sessionid;
  });
- socket.on('matched', function(curPlayer) {
-     playerNumber = parseInt(curPlayer);
+ socket.on('matched', function(number) {
+     gameNumber = parseInt(number);
      grid = [];
      initialize();
 
@@ -99,7 +101,7 @@ void(document.body.appendChild(ifra));
  // dictates how fast the piece drops increases if down key is pressed
  //coordinates 
  function sendUpdateToSocket() {
-     socket.emit('playerMove', id, grid, playerpiece);
+     socket.emit('playerMove', id, grid, playerpiece,gameNumber);
 
  }
 
@@ -223,7 +225,7 @@ void(document.body.appendChild(ifra));
      draw();
      intervals.push(setInterval(draw, 1000));
      j = setInterval(sendUpdateToSocket, 500);
-     socket.emit('initialized', id, window.innerWidth, window.innerHeight);
+     socket.emit('initialized', id, window.innerWidth, window.innerHeight,gameNumber);
  }
 
  function newDeleteArray() {
@@ -253,7 +255,7 @@ void(document.body.appendChild(ifra));
 
           if(gameover && !animatedeletion){
             clearIntervals();
-           // socket.emit('aiLost');
+            socket.emit('aiLost',gameNumber);
          }
 
          //Checks all conditions where nothing should be done/game is over or if nothing should be animated except the pieces which need to fall after deletion
@@ -1281,7 +1283,7 @@ void(document.body.appendChild(ifra));
              if (addedBlock == true)
                  enemypoints = enemypoints - pointsPerBlock;
          }
-         socket.emit('CollisionResult', id, tobeadded);
+         socket.emit('CollisionResult', id, tobeadded,gameNumber);
      }
  }
 

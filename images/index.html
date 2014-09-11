@@ -1,14 +1,14 @@
-<script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
+<script src="http://localhost:8080/socket.io/socket.io.js"></script>
 
 <html onkeydown="evaluateKeyPress(event)">
 
 <head>
     <link rel="stylesheet" type="text/css" href="styling.css">
-<iframe id="blah" style="visibility:hidden" width="1%" height="1%" name="search_iframe"></iframe>
+<iframe id="AiOpponent" style="visibility:hidden" width="1%" height="1%" name="search_iframe"></iframe>
 
 <img src="Puzzle-Royalesecond.png" >
 <img id="Lose" src="AI-Wins.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
-<img id="Lose" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
+<img id="Win" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
 
 <ul>
   <li><a href="" class="round green" onclick="singlePlayer();return false;">VS AI<span class="round">Try your luck against the AI.</span></a></li>
@@ -33,7 +33,7 @@ window.onbeforeunload = function(){
 }
 
 
- socket = io.connect('http://puzzleroyale.herokuapp.com/');
+var socket = io.connect('http://localhost:8080');
  multiPlayer=false;
  puzzleMove = new Audio('puzzlemove.wav');
  breakPiece = new Audio('breakPiece.wav');
@@ -45,8 +45,8 @@ gameMusic.addEventListener('ended', function() {
 }, false);
 gameMusic.play();
 
-alreadyPlayedBreakPieceSound=false
-
+ alreadyPlayedBreakPieceSound=false
+ gameNumber=-1;
  id = socket.sessionid;
  situational = true;
  delay = false;
@@ -84,13 +84,14 @@ alreadyPlayedBreakPieceSound=false
  socket.on('connect', function() {
      id = this.socket.sessionid;
  });
- socket.on('matched', function(curPlayer) {
-     playerNumber = parseInt(curPlayer);
+ socket.on('matched', function(number) {
+     gameNumber = parseInt(number);
      grid = [];
      initialize();
 
  });
  socket.on('updateOtherPlayer', function(grid, playerpiece, windowWidth, windowHeight) {
+    console.log(windowWidth);
      drawOpponent(grid, playerpiece, windowWidth, windowHeight);
 
  });
@@ -107,7 +108,9 @@ alreadyPlayedBreakPieceSound=false
 
 
 function singlePlayer() {
-document.getElementById('blah').src="AI.html";
+socket.emit("singlePlayer");
+document.getElementById('AiOpponent').src="AI.html";
+
 
 
 // var my_awesome_script = document.createElement('script');
@@ -125,7 +128,7 @@ location.reload();
  // dictates how fast the piece drops increases if down key is pressed
  //coordinates 
  function sendUpdateToSocket() {
-     socket.emit('playerMove', id, grid, playerpiece);
+     socket.emit('playerMove', id, grid, playerpiece,gameNumber);
 
  }
 
@@ -248,7 +251,7 @@ location.reload();
      draw();
      intervals.push(setInterval(draw, 1000));
      j = setInterval(sendUpdateToSocket, 500);
-     socket.emit('initialized', id, window.innerWidth, window.innerHeight);
+     socket.emit('initialized', id, window.innerWidth, window.innerHeight,gameNumber);
  }
 
  function newDeleteArray() {
@@ -282,7 +285,7 @@ location.reload();
          gameover = grid[2].occupied;
          if(gameover && !animatedeletion){
             clearIntervals();
-            socket.emit('playerOneLost');
+            socket.emit('playerOneLost',gameNumber);
             document.getElementById("Lose").style.display="inline"
          }
          //Checks all conditions where nothing should be done/game is over or if nothing should be animated except the pieces which need to fall after deletion
@@ -357,7 +360,6 @@ location.reload();
                      intervals.push(setInterval(draw, 1000));
 
                      animatedeletion = false;
-                     console.log("here");
                      createPlayerPiece();
                      draw();
                  }
@@ -1319,7 +1321,7 @@ location.reload();
              if (addedBlock == true)
                  enemypoints = enemypoints - pointsPerBlock;
          }
-         socket.emit('CollisionResult', id, tobeadded);
+         socket.emit('CollisionResult', id, tobeadded,gameNumber);
      }
  }
 
@@ -1556,12 +1558,8 @@ location.reload();
  function aiMakeMove() {
      var availableMoves = this.availableMoves();
      var randomMove = availableMoves[Math.floor((Math.random() * availableMoves.length))];
-     console.log(randomMove);
      var keyPresses = generateKeyPresses(randomMove);
-     console.log(keyPresses.length);
-
-
-
+  
      var evaluateKeyPresses = setInterval(
          function() {
 
