@@ -25,8 +25,7 @@ gameNumber=0;
 app.use(express.compress()); 
 app.use(express.static(__dirname + '/images'));
 
-server.listen((process.env.PORT || 5000));
-
+ server.listen((process.env.PORT || 5000));
 
 
 io.sockets.on('connection', function (socket) {
