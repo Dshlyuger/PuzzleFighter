@@ -1,5 +1,4 @@
- <script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
-
+<script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
 <html>
 
 <head>
@@ -35,7 +34,7 @@
  enemyTickingBlockImages = ["counterred2.png", "counterred3.png", "counterred1.png", "counterred4.png", "counterred.png", "counterblue2.png", "counterblue3.png", "counterblue1.png", "counterblue4.png", "counterblue.png", "countergreen2.png", "countergreen3.png", "countergreen1.png", "countergreen4.png", "countergreen.png", "co/8unteryellow2.png", "counteryellow3.png", "counteryellow1.png", "counteryellow4.png", "counteryellow.png"];
  AiMoveEvaluation=false;
 
- pointsPerBlock = 20;
+ pointsPerBlock = 40;
  intervals = [];
  //Insures that even if speeding up there is a delay before the next piece falls.
  //Key values
@@ -49,7 +48,7 @@
  otherLeftMost = generateOtherLeftMost(window.innerWidth);
  MAXHEIGHT = 648 + 72 * 3;
  DISTANCEBETWEEN = 260;
- ADDITONALSBLOCKSSMULTIPLIER = 1;
+ ADDITONALSBLOCKSSMULTIPLIER = 2;
 
  socket.on('connect', function() {
      id = this.socket.sessionid;
@@ -1261,11 +1260,11 @@ function deepCopy(obj) {
  function updateScore() {
      if (!needsAnimation(grid)) {
          tobeadded = 0;
-         tobeadded = tobeadded + brokengems * 10;
-         tobeadded = tobeadded + ((redsquared * 20) * ((redsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         tobeadded = tobeadded + ((bluesquared * 20) * ((bluesquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         tobeadded = tobeadded + ((yellowsquared * 20) * ((yellowsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         tobeadded = tobeadded + ((greensquared * 20) * ((greensquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+         tobeadded = tobeadded + brokengems * pointsPerBlock;
+         tobeadded = tobeadded + ((redsquared * pointsPerBlock) * ((redsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+         tobeadded = tobeadded + ((bluesquared * pointsPerBlock) * ((bluesquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+         tobeadded = tobeadded + ((yellowsquared * pointsPerBlock) * ((yellowsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+         tobeadded = tobeadded + ((greensquared * pointsPerBlock) * ((greensquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
          score = score + tobeadded;
          brokengems = 0;
          redsquared = 0;
