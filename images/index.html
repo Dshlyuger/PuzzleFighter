@@ -1,4 +1,4 @@
-<script src="http://localhost:8080/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://puzzleroyale.herokuapp.com/socket.io/socket.io.js"></script>
 
 <html onkeydown="evaluateKeyPress(event)">
 
@@ -8,7 +8,7 @@
 
 <img src="Puzzle-Royalesecond.png" >
 <img id="Lose" src="AI-Wins.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
-<img id="Lose" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
+<img id="Win" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
 
 <div  style="position: absolute; top: 8%; left: 40%; display:none"  > If a player connects while your waiting you'll play against them, if not you can always play against the AI until someone arrives. </div>
 
@@ -30,12 +30,9 @@
     <script type="text/javascript ">
         // controls whether or not the draw function changes the player piece's y coordinates at the start of the game this shouldn't happen if player moves along
 
-window.onbeforeunload = function(){
-   socket.emit("reset");
-}
 
 
-var socket = io.connect('http://localhost:8080');
+ socket = io.connect('http://puzzleroyale.herokuapp.com/');
  multiPlayer=false;
  puzzleMove = new Audio('puzzlemove.wav');
  breakPiece = new Audio('breakPiece.wav');
@@ -93,9 +90,7 @@ gameMusic.play();
 
  });
  socket.on('updateOtherPlayer', function(grid, playerpiece, windowWidth, windowHeight) {
-    console.log(windowWidth);
      drawOpponent(grid, playerpiece, windowWidth, windowHeight);
-
  });
 
  socket.on('registerCollisionResult', function(totalpoints) {
@@ -1536,18 +1531,19 @@ location.reload();
          keyPresses.push(88);
 
      var numMovesLeft = (curMove.secondOriginalPosition % 6) - (curMove.secondPostMovePosition % 6);
-
+console.log(numMovesLeft+" indexoutput");
      // If numMovesLeft is negative then the absolute value of that gives us how many times to go right, you only go either left or right.
 
-
+console.log(numMovesLeft);
      if (numMovesLeft < 0) {
          var numMovesRight = Math.abs(numMovesLeft);
          for (var i = 0; i < numMovesRight; i++) {
-             keyPresses.push(37);
+             keyPresses.push(39);
          }
      } else if (numMovesLeft > 0) {
-         for (var i = 0; i < numMovesRight; i++) {
-             keyPresses.push(39);
+         for (var i = 0; i < numMovesLeft; i++) {
+            console.log("shouldbehere");
+             keyPresses.push(37);
          }
      }
 
