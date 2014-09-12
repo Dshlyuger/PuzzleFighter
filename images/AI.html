@@ -221,7 +221,7 @@ function deepCopy(obj) {
 
      draw();
      intervals.push(setInterval(draw, 1000));
-     j = setInterval(sendUpdateToSocket, 500);
+     j = setInterval(sendUpdateToSocket, 200);
      socket.emit('initialized', id, window.innerWidth, window.innerHeight,gameNumber);
  }
 
