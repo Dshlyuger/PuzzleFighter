@@ -1,4 +1,4 @@
- <script type="text/javascript" src="http://puzzleroyalealpha.herokuapp.com/socket.io/socket.io.js"></script>
+ <script type="text/javascript" src="http://localhost:8080/socket.io/socket.io.js"></script>
 
 <html onkeydown="evaluateKeyPress(event)">
 
@@ -6,9 +6,11 @@
     <link rel="stylesheet" type="text/css" href="styling.css">
 <iframe id="AiOpponent" style="visibility:hidden" width="1%" height="1%" name="search_iframe"></iframe>
 
-<img src="Puzzle-Royalesecond.png" >
-<img id="Lose" src="AI-Wins.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
-<img id="Win" src="You-Win.png" style="position: absolute; top: 8%; left: 40%; display:none"  >
+<div>
+<img src="Puzzle-Royalesecond.png" style="width:40%" >
+</div>
+<img id="Lose" src="AI-Wins.png" style="width:20%;display:none"  >
+<img id="Win" src="You-Win.png" style="width:20%;display:none"  >
 <div style="color:white; font-size:20px; position: absolute; top: 30%; left: 82%;" > X:Rotate Right <br> 
     <span style="padding-right:11px; ">Z: Rotate Left </span> <br> <span style="padding-right:5px; ">↓: Drop Faster  </span> <br>  <span style="padding-right:5px; "> ↑: Instant Drop </span><br> <br> Use same color breakers <br>to break your own<br> gems and fill up<br> your opponents gamespace.  </div>
 <div  style="position: absolute; top: 8%; left: 40%; display:none"  > If a player connects while your waiting you'll play against them, if not you can always play against the AI until someone arrives. </div>
@@ -33,7 +35,7 @@
 
 
 
- socket = io.connect('http://puzzleroyalealpha.herokuapp.com/');
+ socket = io.connect('http://localhost:8080');
  multiPlayer = false;
  puzzleMove = new Audio('puzzlemove.wav');
  breakPiece = new Audio('breakPiece.wav');
@@ -69,16 +71,18 @@
  intervals = [];
  //Insures that even if speeding up there is a delay before the next piece falls.
  //Key values
+ IMAGEWIDTH = (window.innerWidth / 2.7) / 10.2;
  LEFT = 37;
  RIGHT = 39;
  COUNTERCLOCK = 90;
  CLOCKWISE = 88;
  SPEEDUP = 40;
  INSTANT = 38;
+ DISTANCEBETWEEN = window.innerWidth / 8;
  LEFTMOST = generateLeftMost(window.innerWidth);
+ RIGHTMOST =LEFTMOST + 72 * 5
  otherLeftMost = generateOtherLeftMost(window.innerWidth);
- MAXHEIGHT = 648 + 72 * 3;
- DISTANCEBETWEEN = 260;
+ MAXHEIGHT = 648 + 72 * 2.8;
  ADDITONALSBLOCKSSMULTIPLIER = 2;
 
  socket.on('connect', function() {
@@ -1197,11 +1201,8 @@
      scoreDisplay = document.createElement('h1');
      scoreDisplay.id = "display";
      scoreDisplay.innerHTML = "Score:" + score;
-     scoreDisplay.style.position = "absolute ";
-     scoreDisplay.style.left = LEFTMOST;
-     scoreDisplay.style.top = MAXHEIGHT - 720;
      if (oldDisplay != null)
-         playerElements.removeChild(oldDisplay);
+     playerElements.removeChild(oldDisplay);
      playerElements.appendChild(scoreDisplay);
 
      if (otherGrid == true) {
@@ -1232,8 +1233,8 @@
      heading = document.createElement('h1');
      heading.innerHTML = "Next ";
      heading.style.position = "absolute ";
-     heading.style.left = LEFTMOST + 465;
-     heading.style.top = MAXHEIGHT + 10 - 688;
+     heading.style.left = RIGHTMOST +  window.innerWidth / 13;
+     heading.style.top = MAXHEIGHT - 648 - 10;
      playerElements.appendChild(heading);
 
      nextplayerimage1 = document.createElement('img');
@@ -1289,23 +1290,15 @@
  }
 
  function generateLeftMost(windowWidth) {
-     DISTANCEBETWEEN = 260;
-     LeftMost = windowWidth / 4.5;
-     otherPlayerLeftMost = windowWidth / 1.7;
-     rightMost = LeftMost + 360;
-     adjustment = (DISTANCEBETWEEN - (otherPlayerLeftMost - rightMost)) / 2;
-     rightMost = rightMost - adjustment;
-     return rightMost - 360;
+     LeftMost = windowWidth / 6;
+     return LeftMost;
  }
 
  function generateOtherLeftMost(windowWidth) {
-     DISTANCEBETWEEN = 260;
-     LeftMost = windowWidth / 4.5;
-     otherPlayerLeftMost = windowWidth / 1.7;
-     rightMost = LeftMost + 360;
-     adjustment = (DISTANCEBETWEEN - (otherPlayerLeftMost - rightMost)) / 2;
-     rightMost = rightMost - adjustment;
-     return otherPlayerLeftMost + adjustment;
+     LeftMost = windowWidth / 6;
+
+     rightMost = LeftMost + 72*6;
+     return rightMost + DISTANCEBETWEEN;
 
  }
 
