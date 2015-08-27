@@ -7,12 +7,12 @@
 <iframe id="AiOpponent" style="visibility:hidden" width="1%" height="1%" name="search_iframe"></iframe>
 
 <div>
-<img src="Puzzle-Royalesecond.png" style="width:40%" >
+<img src="Puzzle-Royalesecond.png" style="width:35%" >
 </div>
 <img id="Lose" src="AI-Wins.png" style="width:20%;display:none"  >
 <img id="Win" src="You-Win.png" style="width:20%;display:none"  >
-<div style="color:white; font-size:20px; position: absolute; top: 30%; left: 82%;" > X:Rotate Right <br> 
-    <span style="padding-right:11px; ">Z: Rotate Left </span> <br> <span style="padding-right:5px; ">↓: Drop Faster  </span> <br>  <span style="padding-right:5px; "> ↑: Instant Drop </span><br> <br> Use same color breakers <br>to break your own<br> gems and fill up<br> your opponents gamespace.  </div>
+<div style="color:white; font-size:20px; position: absolute; top: 40%; left: 82%;" > X:Rotate Right <br> 
+    <span style="padding-right:11px; ">Z: Rotate Left </span> <br> <span style="padding-right:5px; ">Down Arrow: Drop Faster  </span> <br>  <span style="padding-right:5px; "> Up Arrow: Instant Drop </span><br> <br> Use same color breakers <br>to break your own<br> gems and fill up<br> your opponents gamespace.  </div>
 <div  style="position: absolute; top: 8%; left: 40%; display:none"  > If a player connects while your waiting you'll play against them, if not you can always play against the AI until someone arrives. </div>
 
 <ul>
@@ -71,7 +71,7 @@
  intervals = [];
  //Insures that even if speeding up there is a delay before the next piece falls.
  //Key values
- IMAGEWIDTH = (window.innerWidth / 2.7) / 10.2;
+ IMAGEWIDTH = Math.floor((window.innerWidth / 2.7) / 10.2);
  LEFT = 37;
  RIGHT = 39;
  COUNTERCLOCK = 90;
@@ -79,10 +79,10 @@
  SPEEDUP = 40;
  INSTANT = 38;
  DISTANCEBETWEEN = window.innerWidth / 8;
- LEFTMOST = generateLeftMost(window.innerWidth);
- RIGHTMOST =LEFTMOST + 72 * 5
+ LEFTMOST = (generateLeftMost(window.innerWidth));
+ RIGHTMOST =LEFTMOST + IMAGEWIDTH * 5
  otherLeftMost = generateOtherLeftMost(window.innerWidth);
- MAXHEIGHT = 648 + 72 * 2.8;
+ MAXHEIGHT = IMAGEWIDTH * 9 + IMAGEWIDTH * 3.5;
  ADDITONALSBLOCKSSMULTIPLIER = 2;
 
  socket.on('connect', function() {
@@ -172,14 +172,13 @@
  function playerpiece(color1, color2, image1, image2) {
      this.color1 = color1;
      this.color2 = color2;
-     this.xcoordinate1 = LEFTMOST + 144;
-     this.ycoordinate1 = MAXHEIGHT - 648;
-     this.xcoordinate2 = LEFTMOST + 144;
-     this.ycoordinate2 = MAXHEIGHT - 576;
+     this.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
+     this.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
+     this.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
+     this.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
      this.image1 = image1;
      this.image2 = image2;
-     this.
-     case = 1;
+     this.case = 1;
  }
  // initialize grid
 
@@ -223,8 +222,8 @@
      };
 
      playerpiece = new playerpiece();
-     for (var y = MAXHEIGHT - 648; y <= MAXHEIGHT; y = y + 72) {
-         for (var x = LEFTMOST; x <= LEFTMOST + 360; x = x + 72) {
+     for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
+         for (var x = LEFTMOST; x <= LEFTMOST + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
              grid.push(new block(x, y, preloadedImages["empty"]));
          }
      }
@@ -239,8 +238,8 @@
 
      otherGrid = [];
 
-     for (var y = MAXHEIGHT - 648; y <= MAXHEIGHT; y = y + 72) {
-         for (var x = otherLeftMost; x <= otherLeftMost + 360; x = x + 72) {
+     for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
+         for (var x = otherLeftMost; x <= otherLeftMost + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
              otherGrid.push(new block(x, y, preloadedImages["empty"]));
          }
      }
@@ -262,12 +261,12 @@
      newarray = new Array();
      for (var j = 0; j < grid.length; j++) {
          grid[j].visited = false;
-         if (grid[j].ycoordinate + 72 <= MAXHEIGHT && findGrid(grid[j].xcoordinate, grid[j].ycoordinate, grid).color != "none" && findGrid(grid[j].xcoordinate, grid[j].ycoordinate + 72, grid).color == "none") {
+         if (grid[j].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[j].xcoordinate, grid[j].ycoordinate, grid).color != "none" && findGrid(grid[j].xcoordinate, grid[j].ycoordinate + IMAGEWIDTH, grid).color == "none") {
              animatedeletion = true;
              playerpiece.ycoordinate1 = -20000;
              playerpiece.ycoordinate2 = -20000;
              column = new Array();
-             for (var z = grid[j].ycoordinate; z >= 0; z = z - 72) {
+             for (var z = grid[j].ycoordinate; z >= 0; z = z - IMAGEWIDTH) {
                  if (findGrid(grid[j].xcoordinate, z, grid).color != "none") column.push(findGrid(grid[j].xcoordinate, z, grid));
              }
              newarray.push(column);
@@ -312,11 +311,11 @@
                      deletearray[p][k].color = "none";
                      deletearray[p][k].breaker = false;
 
-                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).image = oldImage;
-                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).color = oldColor;
-                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).blocked = oldBlockedStatus;
-                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).occupied = true;
-                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).breaker = oldBreakerStatus;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).image = oldImage;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).color = oldColor;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).blocked = oldBlockedStatus;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).occupied = true;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).breaker = oldBreakerStatus;
 
                  }
              }
@@ -332,8 +331,8 @@
                    If not, we fall like usual, if this is the case the piece will fall like usual next time*/
          else {
              if (situational == false) {
-                 playerpiece.ycoordinate1 += 72;
-                 playerpiece.ycoordinate2 += 72;
+                 playerpiece.ycoordinate1 += IMAGEWIDTH;
+                 playerpiece.ycoordinate2 += IMAGEWIDTH;
              } else situational = false;
              //This always happens whether or not the piece has fallen it's current location should show up as the piece so a newimage is appended to it's location            
          }
@@ -408,10 +407,10 @@
          squaretwocollide = false;
          bothcollided = false;
          for (var i = 0; i < grid.length; i++) {
-             if ((grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 && grid[i].occupied == true) || playerpiece.ycoordinate1 == MAXHEIGHT) {
+             if ((grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate1 == MAXHEIGHT) {
                  squareonecollide = true;
              }
-             if ((grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + 72 && grid[i].occupied == true) || playerpiece.ycoordinate2 == MAXHEIGHT) {
+             if ((grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate2 == MAXHEIGHT) {
                  squaretwocollide = true;;
              }
          }
@@ -508,10 +507,10 @@
 
  function isoccupied() {
      for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 && grid[i].occupied == true) {
+         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) {
              return true;
          }
-         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + 72 && grid[i].occupied == true) {
+         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) {
              1
              return true;
          }
@@ -521,15 +520,15 @@
 
  function isoccupiedkeypress(direction) {
      if (direction == RIGHT) {
-         if (playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.xcoordinate2 + 72 > LEFTMOST + 360) return true;
+         if (playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.xcoordinate2 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5) return true;
          if (playerpiece.
              case ==1 || playerpiece.
              case ==3) {
              for (var i = 0; i < grid.length; i++) {
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
                      return true;
                  }
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                      return true;
                  }
              }
@@ -537,7 +536,7 @@
              if (playerpiece.
                  case ==4) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
@@ -545,7 +544,7 @@
              if (playerpiece.
                  case ==2) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
@@ -553,15 +552,18 @@
          }
      }
      if (direction == LEFT) {
-         if (playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.xcoordinate2 - 72 < LEFTMOST) return true;
+         if (playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.xcoordinate2 - IMAGEWIDTH < LEFTMOST) {
+            console.log("woah1");
+            return true;
+        }
          if (playerpiece.
              case ==1 || playerpiece.
              case ==3) {
              for (var i = 0; i < grid.length; i++) {
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
                      return true;
                  }
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                      return true;
                  }
              }
@@ -569,7 +571,7 @@
              if (playerpiece.
                  case ==2) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
@@ -577,12 +579,13 @@
              if (playerpiece.
                  case ==4) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
              }
          }
+         console.log("blah");
          return false;
      }
  }
@@ -631,15 +634,15 @@
      } else {
          if (direction == LEFT && !isoccupiedkeypress(direction) && delay == false) {
              unoccupy(playerpiece);
-             playerpiece.xcoordinate1 -= 72;
-             playerpiece.xcoordinate2 -= 72;
+             playerpiece.xcoordinate1 -= IMAGEWIDTH;
+             playerpiece.xcoordinate2 -= IMAGEWIDTH;
              situational = true;
              draw();
          }
          if (direction == RIGHT && !isoccupiedkeypress(direction) && delay == false) {
              unoccupy(playerpiece);
-             playerpiece.xcoordinate1 += 72;
-             playerpiece.xcoordinate2 += 72;
+             playerpiece.xcoordinate1 += IMAGEWIDTH;
+             playerpiece.xcoordinate2 += IMAGEWIDTH;
              situational = true;
              draw();
          }
@@ -658,10 +661,10 @@
 
      drawFuturePieces();
 
-     playerpiece.xcoordinate1 = LEFTMOST + 144;
-     playerpiece.xcoordinate2 = LEFTMOST + 144;
-     playerpiece.ycoordinate1 = MAXHEIGHT - 648;
-     playerpiece.ycoordinate2 = MAXHEIGHT - 576;
+     playerpiece.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
+     playerpiece.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
+     playerpiece.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
+     playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
      playerpiece.image1 = imgarray[firstplayerpiece];
      playerpiece.color1 = colorarray[firstplayerpiece];
 
@@ -671,8 +674,8 @@
      case = 1;
      if (grid[8].occupied == true) {
 
-         playerpiece.xcoordinate2 = LEFTMOST + 216;
-         playerpiece.ycoordinate2 = MAXHEIGHT - 648;
+         playerpiece.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 3;
+         playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 9;
      }
      situational = true;
 
@@ -688,30 +691,30 @@
              situational = true;
              switch (position) {
                  case 1:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.
                  case = 4;
                  draw();
                  break;
                  case 2:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.
                  case = 1;
                  draw();
                  break;
                  case 3:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.
                  case = 2;
                  draw();
                  break;
                  case 4:
 
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.
                  case = 3;
                  draw();
@@ -724,29 +727,29 @@
              situational = true;
              switch (position) {
                  case 1:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.
                  case = 2;
                  draw();
                  break;
                  case 2:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.
                  case = 3;
                  draw();
                  break;
                  case 3:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.
                  case = 4;
                  draw();
                  break;
                  case 4:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.
                  case = 1;
                  draw();
@@ -763,32 +766,32 @@
          switch (position) {
              case 1:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
                  break;
              case 2:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
                  break;
              case 3:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
                  break;
              case 4:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
@@ -799,31 +802,31 @@
          switch (position) {
              case 1:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
                  break;
              case 2:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
                  break;
              case 3:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
                  break;
              case 4:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 && grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH && grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
@@ -871,14 +874,14 @@
      ycoordinate = gridpiece.ycoordinate;
 
      originalSquare = findGrid(xcoordinate, ycoordinate, grid);
-     topSquare = findGrid(xcoordinate, ycoordinate + 72, grid);
-     rightSquare = findGrid(xcoordinate + 72, ycoordinate, grid);
-     bottomSquare = findGrid(xcoordinate, ycoordinate - 72, grid);
-     rightBottomSquare = findGrid(xcoordinate + 72, ycoordinate - 72, grid);
-     rightTopSquare = findGrid(xcoordinate + 72, ycoordinate + 72, grid);
-     leftSquare = findGrid(xcoordinate - 72, ycoordinate, grid);
-     leftTopSquare = findGrid(xcoordinate - 72, ycoordinate + 72, grid);
-     leftBottomSquare = findGrid(xcoordinate - 72, ycoordinate - 72, grid);
+     topSquare = findGrid(xcoordinate, ycoordinate + IMAGEWIDTH, grid);
+     rightSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate, grid);
+     bottomSquare = findGrid(xcoordinate, ycoordinate - IMAGEWIDTH, grid);
+     rightBottomSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
+     rightTopSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
+     leftSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate, grid);
+     leftTopSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
+     leftBottomSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
 
      if (gridpiece.breaker == false) {
          if (noneAreBreakers(rightSquare, bottomSquare, rightBottomSquare) && (rightSquare.color == gridpiece.color) && bottomSquare.color == gridpiece.color &&
@@ -1152,10 +1155,10 @@
                      break;
              }
 
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate + 72, gridpiece.ycoordinate, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate - 72, gridpiece.ycoordinate, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate + 72, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate - 72, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate + IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate - IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate + IMAGEWIDTH, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate - IMAGEWIDTH, grid), grid);
 
          }
      }
@@ -1164,7 +1167,7 @@
 
  function needsAnimation(grid) {
      for (var e = 0; e < grid.length; e++) {
-         if (grid[e].ycoordinate + 72 <= MAXHEIGHT && findGrid(grid[e].xcoordinate, grid[e].ycoordinate, grid).color != "none" && findGrid(grid[e].xcoordinate, grid[e].ycoordinate + 72, grid).color == "none") {
+         if (grid[e].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[e].xcoordinate, grid[e].ycoordinate, grid).color != "none" && findGrid(grid[e].xcoordinate, grid[e].ycoordinate + IMAGEWIDTH, grid).color == "none") {
              return true;
          }
      }
@@ -1185,22 +1188,28 @@
          newimage.style.position = "absolute ";
          newimage.style.left = playerpiece.xcoordinate1 + "px ";
          newimage.style.top = playerpiece.ycoordinate1 + "px ";
+         newimage.width = IMAGEWIDTH;
          playerElements.appendChild(newimage);
          newimage = document.createElement('img');
          newimage.src = playerpiece.image2;
          newimage.style.position = "absolute ";
          newimage.style.left = playerpiece.xcoordinate2 + "px ";
          newimage.style.top = playerpiece.ycoordinate2 + "px ";
+         newimage.width = IMAGEWIDTH;
          playerElements.appendChild(newimage);
      }
  }
 
  function drawNonPlayerPieces(grid, otherGrid) {
 
-     oldDisplay = document.getElementById('display');
+       oldDisplay = document.getElementById('display');
      scoreDisplay = document.createElement('h1');
      scoreDisplay.id = "display";
-     scoreDisplay.innerHTML = "Score:" + score;
+     scoreDisplay.innerHTML = "Score:" + '&nbsp;' + '&nbsp;' + '&nbsp;' + score;
+     scoreDisplay.style.position = "absolute ";
+     scoreDisplay.style.left = LEFTMOST;
+     scoreDisplay.style.top = MAXHEIGHT - IMAGEWIDTH * 10;
+
      if (oldDisplay != null)
      playerElements.removeChild(oldDisplay);
      playerElements.appendChild(scoreDisplay);
@@ -1216,6 +1225,7 @@
          newimage.style.position = "absolute ";
          newimage.style.left = grid[d].xcoordinate + "px ";
          newimage.style.top = grid[d].ycoordinate + "px ";
+         newimage.width = IMAGEWIDTH;
          toAppendTo.appendChild(newimage);
 
      }
@@ -1225,6 +1235,7 @@
          newimage.style.position = "absolute ";
          newimage.style.left = grid[2].xcoordinate + "px ";
          newimage.style.top = grid[2].ycoordinate + "px ";
+         newimage.width = IMAGEWIDTH;
          toAppendTo.appendChild(newimage);
      }
  }
@@ -1233,22 +1244,24 @@
      heading = document.createElement('h1');
      heading.innerHTML = "Next ";
      heading.style.position = "absolute ";
-     heading.style.left = RIGHTMOST +  window.innerWidth / 13;
-     heading.style.top = MAXHEIGHT - 648 - 10;
+     heading.style.left = RIGHTMOST +  window.innerWidth / 19;
+     heading.style.top = MAXHEIGHT - IMAGEWIDTH * 9 - 5;
      playerElements.appendChild(heading);
 
      nextplayerimage1 = document.createElement('img');
      nextplayerimage1.src = imgarray[nextselection1];
      nextplayerimage1.style.position = "absolute ";
-     nextplayerimage1.style.left = 465 + LEFTMOST;
-     nextplayerimage1.style.top = MAXHEIGHT + 40 - 648;
+     nextplayerimage1.style.left = IMAGEWIDTH * 6.458 + LEFTMOST;
+     nextplayerimage1.style.top = MAXHEIGHT - IMAGEWIDTH * 8;
+     nextplayerimage1.width = IMAGEWIDTH;
      playerElements.appendChild(nextplayerimage1);
 
      nextplayerimage2 = document.createElement('img');
      nextplayerimage2.src = imgarray[nextselection2];
      nextplayerimage2.style.position = "absolute ";
-     nextplayerimage2.style.left = 465 + LEFTMOST;
-     nextplayerimage2.style.top = MAXHEIGHT + 110 - 648;
+     nextplayerimage2.style.left = IMAGEWIDTH * 6.458 + LEFTMOST;
+     nextplayerimage2.style.top = MAXHEIGHT - IMAGEWIDTH * 7;
+     nextplayerimage2.width = IMAGEWIDTH;
      playerElements.appendChild(nextplayerimage2);
  }
 
@@ -1270,6 +1283,7 @@
          newimage.style.position = "absolute ";
          newimage.style.left = grid[d].xcoordinate - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
          newimage.style.top = grid[d].ycoordinate + "px ";
+         newimage.width = IMAGEWIDTH;
          opponentElements.appendChild(newimage);
      }
 
@@ -1278,6 +1292,7 @@
      newimage.style.position = "absolute ";
      newimage.style.left = playerpiece.xcoordinate1 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
      newimage.style.top = playerpiece.ycoordinate1 + "px ";
+     newimage.width = IMAGEWIDTH;
      opponentElements.appendChild(newimage);
 
      newimage = document.createElement('img');
@@ -1285,20 +1300,21 @@
      newimage.style.position = "absolute ";
      newimage.style.left = playerpiece.xcoordinate2 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
      newimage.style.top = playerpiece.ycoordinate2 + "px ";
+     newimage.width = IMAGEWIDTH;
      opponentElements.appendChild(newimage);
 
  }
 
  function generateLeftMost(windowWidth) {
-     LeftMost = windowWidth / 6;
-     return LeftMost;
+     LeftMost = windowWidth / 4;
+     return Math.floor(LeftMost);
  }
 
  function generateOtherLeftMost(windowWidth) {
-     LeftMost = windowWidth / 6;
+     LeftMost = windowWidth / 4;
 
-     rightMost = LeftMost + 72*6;
-     return rightMost + DISTANCEBETWEEN;
+     rightMost = LeftMost + IMAGEWIDTH*6;
+     return Math.floor(rightMost + DISTANCEBETWEEN);
 
  }
 

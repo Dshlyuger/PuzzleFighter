@@ -1,3 +1,14 @@
+@font-face {
+    font-family: ArcadeClassic;
+    src: url(ARCADECLASSIC.TTF);
+}
+
+#display{
+	font-family: ArcadeClassic;
+	font-size: 2.3rem;
+	cursor: rgba(134, 63, 56, 0.55);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -17,11 +28,10 @@
 	}
 
 	ul {
-		margin: 30px auto;
-		text-align: center;
 		 position: absolute;
-    	left: 80%;
-    	top: 8%;
+    	left: 75%;
+    	top: 6%;
+    	width: 30%;
 	}
 
 	li {
@@ -137,7 +147,7 @@
 		transition: all .5s ease-in-out;
 		font-size: 1px;
 		border: none;
-		padding: 40% 20% 0 20%;
+		padding: 25% 20% 0 20%;
 		color: #fff;
 	}
 
