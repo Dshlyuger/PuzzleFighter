@@ -34,19 +34,19 @@
 
 
  socket = io.connect('http://puzzleroyalealpha.herokuapp.com/');
- multiPlayer=false;
+ multiPlayer = false;
  puzzleMove = new Audio('puzzlemove.wav');
  breakPiece = new Audio('breakPiece.wav');
 
-gameMusic = new Audio('gameMusic.mp3'); 
-gameMusic.addEventListener('ended', function() {
-    this.currentTime = 0;
-    this.play();
-}, false);
-gameMusic.play();
+ gameMusic = new Audio('gameMusic.mp3');
+ gameMusic.addEventListener('ended', function() {
+     this.currentTime = 0;
+     this.play();
+ }, false);
+ gameMusic.play();
 
- alreadyPlayedBreakPieceSound=false
- gameNumber=-1;
+ alreadyPlayedBreakPieceSound = false
+ gameNumber = -1;
  id = socket.sessionid;
  situational = true;
  delay = false;
@@ -61,7 +61,7 @@ gameMusic.play();
  redsquared = 0;
  greensquared = 0;
  yellowsquared = 0;
- 
+
  enemypoints = 0;
  enemyTickingBlockImages = ["counterred2.png", "counterred3.png", "counterred1.png", "counterred4.png", "counterred.png", "counterblue2.png", "counterblue3.png", "counterblue1.png", "counterblue4.png", "counterblue.png", "countergreen2.png", "countergreen3.png", "countergreen1.png", "countergreen4.png", "countergreen.png", "co/8unteryellow2.png", "counteryellow3.png", "counteryellow1.png", "counteryellow4.png", "counteryellow.png"];
 
@@ -98,43 +98,43 @@ gameMusic.play();
      enemypoints = enemypoints + totalpoints;
  });
 
-  socket.on('aiLost', function(totalpoints) {
-    clearIntervals();
-    document.getElementById("Win").style.display='inline';
+ socket.on('aiLost', function(totalpoints) {
+     clearIntervals();
+     document.getElementById("Win").style.display = 'inline';
  });
 
 
 
-function singlePlayer() {
-socket.emit("singlePlayer");
-document.getElementById('AiOpponent').src="AI.html";
+ function singlePlayer() {
+     socket.emit("singlePlayer");
+     document.getElementById('AiOpponent').src = "AI.html";
 
 
 
-// var my_awesome_script = document.createElement('script');
+     // var my_awesome_script = document.createElement('script');
 
-//my_awesome_script.setAttribute('src','testing.js');
+     //my_awesome_script.setAttribute('src','testing.js');
 
-//document.head.appendChild(my_awesome_script);
-}
+     //document.head.appendChild(my_awesome_script);
+ }
 
-function reset() {
-socket.emit('reset');
-location.reload();
-}
+ function reset() {
+     socket.emit('reset');
+     location.reload();
+ }
 
  // dictates how fast the piece drops increases if down key is pressed
  //coordinates 
  function sendUpdateToSocket() {
-     socket.emit('playerMove', id, grid, playerpiece,gameNumber);
+     socket.emit('playerMove', id, grid, playerpiece, gameNumber);
 
  }
 
  function holdImg(e) {
-         derp.innerHTML = "" + e.clientX + "px ";
-         herp.innerHTML = "" + e.clientY + "px ";
-     }
-     //block object
+     derp.innerHTML = "" + e.clientX + "px ";
+     herp.innerHTML = "" + e.clientY + "px ";
+ }
+ //block object
 
  function block(x, y, picture) {
      this.occupied = false;
@@ -166,17 +166,18 @@ location.reload();
 
 
  function playerpiece(color1, color2, image1, image2) {
-         this.color1 = color1;
-         this.color2 = color2;
-         this.xcoordinate1 = LEFTMOST + 144;
-         this.ycoordinate1 = MAXHEIGHT - 648;
-         this.xcoordinate2 = LEFTMOST + 144;
-         this.ycoordinate2 = MAXHEIGHT - 576;
-         this.image1 = image1;
-         this.image2 = image2;
-         this.case = 1;
-     }
-     // initialize grid
+     this.color1 = color1;
+     this.color2 = color2;
+     this.xcoordinate1 = LEFTMOST + 144;
+     this.ycoordinate1 = MAXHEIGHT - 648;
+     this.xcoordinate2 = LEFTMOST + 144;
+     this.ycoordinate2 = MAXHEIGHT - 576;
+     this.image1 = image1;
+     this.image2 = image2;
+     this.
+     case = 1;
+ }
+ // initialize grid
 
  function initialize() {
      // preload images
@@ -249,7 +250,7 @@ location.reload();
      draw();
      intervals.push(setInterval(draw, 1000));
      j = setInterval(sendUpdateToSocket, 200);
-     socket.emit('initialized', id, window.innerWidth, window.innerHeight,gameNumber);
+     socket.emit('initialized', id, window.innerWidth, window.innerHeight, gameNumber);
  }
 
  function newDeleteArray() {
@@ -272,104 +273,104 @@ location.reload();
  }
 
  function draw() {
-       
-       
-             while (playerElements.hasChildNodes())
-                 playerElements.removeChild(playerElements.firstChild);
 
-         
-       
-         drawFuturePieces();
-         gameover = grid[2].occupied;
-         if(gameover && !animatedeletion){
-            clearIntervals();
-            socket.emit('playerOneLost',gameNumber);
-            document.getElementById("Lose").style.display="inline"
-         }
-         //Checks all conditions where nothing should be done/game is over or if nothing should be animated except the pieces which need to fall after deletion
-         if ((gameover && grid[2].image != preloadedImages["empty"] && onepieceanimate != true) || (delay && onepieceanimate != true) || animatedeletion) {
-             if (animatedeletion) {
-                 playerpiece.ycoordinate1 = -10000;
-                 playerpiece.ycoordinate2 = -10000;
-                 for (var p = 0; p < deletearray.length; p++) {
-                     for (var k = 0; k < deletearray[p].length; k++) {
-                         // Piece is getting animated so we first store all of it's old information which lies in a gridpiece that will now become empty and store that old information
-                         // in the gridpiece below(hence the +72)
-                         oldImage = deletearray[p][k].image;
-                         oldColor = deletearray[p][k].color;
-                         oldBlockedStatus = deletearray[p][k].blocked;
-                         oldBreakerStatus = deletearray[p][k].breaker;
 
-                         //  console.log(deletearray[p][k]+" set to to false");
-                         deletearray[p][k].image = preloadedImages["empty"];
-                         deletearray[p][k].occupied = false;
-                         deletearray[p][k].blocked = false;
-                         deletearray[p][k].color = "none";
-                         deletearray[p][k].breaker = false;
+     while (playerElements.hasChildNodes())
+         playerElements.removeChild(playerElements.firstChild);
 
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).image = oldImage;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).color = oldColor;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).blocked = oldBlockedStatus;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).occupied = true;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).breaker = oldBreakerStatus;
 
-                     }
+
+     drawFuturePieces();
+     gameover = grid[2].occupied;
+     if (gameover && !animatedeletion) {
+         clearIntervals();
+         socket.emit('playerOneLost', gameNumber);
+         document.getElementById("Lose").style.display = "inline"
+     }
+     //Checks all conditions where nothing should be done/game is over or if nothing should be animated except the pieces which need to fall after deletion
+     if ((gameover && grid[2].image != preloadedImages["empty"] && onepieceanimate != true) || (delay && onepieceanimate != true) || animatedeletion) {
+         if (animatedeletion) {
+             playerpiece.ycoordinate1 = -10000;
+             playerpiece.ycoordinate2 = -10000;
+             for (var p = 0; p < deletearray.length; p++) {
+                 for (var k = 0; k < deletearray[p].length; k++) {
+                     // Piece is getting animated so we first store all of it's old information which lies in a gridpiece that will now become empty and store that old information
+                     // in the gridpiece below(hence the +72)
+                     oldImage = deletearray[p][k].image;
+                     oldColor = deletearray[p][k].color;
+                     oldBlockedStatus = deletearray[p][k].blocked;
+                     oldBreakerStatus = deletearray[p][k].breaker;
+
+                     //  console.log(deletearray[p][k]+" set to to false");
+                     deletearray[p][k].image = preloadedImages["empty"];
+                     deletearray[p][k].occupied = false;
+                     deletearray[p][k].blocked = false;
+                     deletearray[p][k].color = "none";
+                     deletearray[p][k].breaker = false;
+
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).image = oldImage;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).color = oldColor;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).blocked = oldBlockedStatus;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).occupied = true;
+                     findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).breaker = oldBreakerStatus;
+
                  }
-
              }
 
-         } else {
-             //Since the piece has the potential to have fallen we unoccupy it's current position
-             if (playerpiece.ycoordinate1 == MAXHEIGHT || playerpiece.ycoordinate2 == MAXHEIGHT || (isoccupied() && situational == false)) {
-                 collision(playerpiece);
-             }
-             /*Situational checks to see if we recently moved left or right, or if it's the start of the game, to prevent extra vertical movement. 
-                   If not, we fall like usual, if this is the case the piece will fall like usual next time*/
-             else {
-                 if (situational == false) {
-                     playerpiece.ycoordinate1 += 72;
-                     playerpiece.ycoordinate2 += 72;
-                 } else situational = false;
-                 //This always happens whether or not the piece has fallen it's current location should show up as the piece so a newimage is appended to it's location            
-             }
          }
-         /*Does two things, reconstructs the game board and updates the deletearray with an array of columns full of pieces that need to be animated before the game can resume after a deletion. 
-               Only updates board if there is nothing to animate.*/
-         deletearray = newDeleteArray();
-         if (deletearray.length == 0) {
-             if (animatedeletion == true) {
 
-                 for (var r = 0; r < grid.length; r++) {
-                     if (grid[r].occupied == true) {
-                         if (r >= 54 || grid[r + 6].image != preloadedImages["empty"]) {
-                             var curGridPiece = findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid)
-                             if (!contains(enemyTickingBlockImages, curGridPiece.image)) {
-                                 squareCreator(findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid));
-                                 markfordeletionhelper(grid);
-                                 updateScore();
-                             }
+     } else {
+         //Since the piece has the potential to have fallen we unoccupy it's current position
+         if (playerpiece.ycoordinate1 == MAXHEIGHT || playerpiece.ycoordinate2 == MAXHEIGHT || (isoccupied() && situational == false)) {
+             collision(playerpiece);
+         }
+         /*Situational checks to see if we recently moved left or right, or if it's the start of the game, to prevent extra vertical movement. 
+                   If not, we fall like usual, if this is the case the piece will fall like usual next time*/
+         else {
+             if (situational == false) {
+                 playerpiece.ycoordinate1 += 72;
+                 playerpiece.ycoordinate2 += 72;
+             } else situational = false;
+             //This always happens whether or not the piece has fallen it's current location should show up as the piece so a newimage is appended to it's location            
+         }
+     }
+     /*Does two things, reconstructs the game board and updates the deletearray with an array of columns full of pieces that need to be animated before the game can resume after a deletion. 
+               Only updates board if there is nothing to animate.*/
+     deletearray = newDeleteArray();
+     if (deletearray.length == 0) {
+         if (animatedeletion == true) {
+
+             for (var r = 0; r < grid.length; r++) {
+                 if (grid[r].occupied == true) {
+                     if (r >= 54 || grid[r + 6].image != preloadedImages["empty"]) {
+                         var curGridPiece = findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid)
+                         if (!contains(enemyTickingBlockImages, curGridPiece.image)) {
+                             squareCreator(findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid));
+                             markfordeletionhelper(grid);
+                             updateScore();
                          }
                      }
                  }
-                 if (needsAnimation(grid)) {
-                     deletearray = newDeleteArray();
-                 } else {
-                     clearIntervals();
-                     intervals.push(setInterval(draw, 1000));
+             }
+             if (needsAnimation(grid)) {
+                 deletearray = newDeleteArray();
+             } else {
+                 clearIntervals();
+                 intervals.push(setInterval(draw, 1000));
 
-                     animatedeletion = false;
-                     createPlayerPiece();
-                     draw();
-                 }
+                 animatedeletion = false;
+                 createPlayerPiece();
+                 draw();
              }
          }
-
-
-         drawNonPlayerPieces(grid, false);
-         if (!gameover || onepieceanimate)
-             drawPlayerPiece(playerpiece);
      }
-     // Occupies the grid elements that correspond to where the current piece is located
+
+
+     drawNonPlayerPieces(grid, false);
+     if (!gameover || onepieceanimate)
+         drawPlayerPiece(playerpiece);
+ }
+ // Occupies the grid elements that correspond to where the current piece is located
 
  function occupy(playerpiece) {
      for (var i = 0; i < grid.length; i++) {
@@ -396,7 +397,9 @@ location.reload();
  function collision(playerpiece) {
      //Case where both squares can collide. This is when  both squares are horizontal
 
-     if (playerpiece.case == 2 || playerpiece.case == 4) {
+     if (playerpiece.
+         case ==2 || playerpiece.
+         case ==4) {
          squareonecollide = false;
          squaretwocollide = false;
          bothcollided = false;
@@ -515,7 +518,9 @@ location.reload();
  function isoccupiedkeypress(direction) {
      if (direction == RIGHT) {
          if (playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.xcoordinate2 + 72 > LEFTMOST + 360) return true;
-         if (playerpiece.case == 1 || playerpiece.case == 3) {
+         if (playerpiece.
+             case ==1 || playerpiece.
+             case ==3) {
              for (var i = 0; i < grid.length; i++) {
                  if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
                      return true;
@@ -525,14 +530,16 @@ location.reload();
                  }
              }
          } else {
-             if (playerpiece.case == 4) {
+             if (playerpiece.
+                 case ==4) {
                  for (var i = 0; i < grid.length; i++) {
                      if (grid[i].xcoordinate == playerpiece.xcoordinate2 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
              }
-             if (playerpiece.case == 2) {
+             if (playerpiece.
+                 case ==2) {
                  for (var i = 0; i < grid.length; i++) {
                      if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
@@ -543,7 +550,9 @@ location.reload();
      }
      if (direction == LEFT) {
          if (playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.xcoordinate2 - 72 < LEFTMOST) return true;
-         if (playerpiece.case == 1 || playerpiece.case == 3) {
+         if (playerpiece.
+             case ==1 || playerpiece.
+             case ==3) {
              for (var i = 0; i < grid.length; i++) {
                  if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
                      return true;
@@ -553,14 +562,16 @@ location.reload();
                  }
              }
          } else {
-             if (playerpiece.case == 2) {
+             if (playerpiece.
+                 case ==2) {
                  for (var i = 0; i < grid.length; i++) {
                      if (grid[i].xcoordinate == playerpiece.xcoordinate2 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
              }
-             if (playerpiece.case == 4) {
+             if (playerpiece.
+                 case ==4) {
                  for (var i = 0; i < grid.length; i++) {
                      if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
@@ -652,14 +663,15 @@ location.reload();
 
      playerpiece.image2 = imgarray[secondplayerpiece];
      playerpiece.color2 = colorarray[secondplayerpiece];
-     playerpiece.case = 1;
+     playerpiece.
+     case = 1;
      if (grid[8].occupied == true) {
-            
-         playerpiece.xcoordinate2 = LEFTMOST+216;
+
+         playerpiece.xcoordinate2 = LEFTMOST + 216;
          playerpiece.ycoordinate2 = MAXHEIGHT - 648;
      }
      situational = true;
-  
+
 
  }
 
@@ -674,28 +686,32 @@ location.reload();
                  case 1:
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
-                     playerpiece.case = 4;
-                     draw();
-                     break;
+                     playerpiece.
+                 case = 4;
+                 draw();
+                 break;
                  case 2:
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
-                     playerpiece.case = 1;
-                     draw();
-                     break;
+                     playerpiece.
+                 case = 1;
+                 draw();
+                 break;
                  case 3:
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
-                     playerpiece.case = 2;
-                     draw();
-                     break;
+                     playerpiece.
+                 case = 2;
+                 draw();
+                 break;
                  case 4:
 
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
-                     playerpiece.case = 3;
-                     draw();
-                     break;
+                     playerpiece.
+                 case = 3;
+                 draw();
+                 break;
              }
          }
          if (direction == CLOCKWISE && !isoccupiedrotate(direction)) {
@@ -707,37 +723,38 @@ location.reload();
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
                      playerpiece.
-                     case = 2;
-                     draw();
-                     break;
+                 case = 2;
+                 draw();
+                 break;
                  case 2:
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
                      playerpiece.
-                     case = 3;
-                     draw();
-                     break;
+                 case = 3;
+                 draw();
+                 break;
                  case 3:
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
                      playerpiece.
-                     case = 4;
-                     draw();
-                     break;
+                 case = 4;
+                 draw();
+                 break;
                  case 4:
                      playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
                      playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
                      playerpiece.
-                     case = 1;
-                     draw();
-                     break;
+                 case = 1;
+                 draw();
+                 break;
              }
          }
      }
  }
 
  function isoccupiedrotate(direction) {
-     position = playerpiece.case;
+     position = playerpiece.
+     case;
      if (direction == COUNTERCLOCK) {
          switch (position) {
              case 1:
@@ -1056,10 +1073,10 @@ location.reload();
          return null;
 
      if (gridpiece.color == color) {
-        if(!alreadyPlayedBreakPieceSound){
-         breakPiece.play();
-         alreadyPlayedBreakPieceSound=true;
-        }
+         if (!alreadyPlayedBreakPieceSound) {
+             breakPiece.play();
+             alreadyPlayedBreakPieceSound = true;
+         }
          gridpiece.visited = true;
 
          switch (gridpiece.image) {
@@ -1154,7 +1171,7 @@ location.reload();
      for (var j = 0; j < grid.length; j++) {
          grid[j].visited = false;
      }
-     alreadyPlayedBreakPieceSound=false;
+     alreadyPlayedBreakPieceSound = false;
  }
 
  function drawPlayerPiece(playerpiece) {
@@ -1175,7 +1192,7 @@ location.reload();
  }
 
  function drawNonPlayerPieces(grid, otherGrid) {
-    
+
      oldDisplay = document.getElementById('display');
      scoreDisplay = document.createElement('h1');
      scoreDisplay.id = "display";
@@ -1243,9 +1260,9 @@ location.reload();
      otherNewLeftMost = generateOtherLeftMost(adjustedwidth);
 
 
-         while (opponentElements.hasChildNodes())
-              opponentElements.removeChild(opponentElements.firstChild);
-    
+     while (opponentElements.hasChildNodes())
+         opponentElements.removeChild(opponentElements.firstChild);
+
      for (var d = 0; d < grid.length; d++) {
          newimage = document.createElement('img');
          newimage.src = grid[d].image;
@@ -1319,7 +1336,7 @@ location.reload();
              if (addedBlock == true)
                  enemypoints = enemypoints - pointsPerBlock;
          }
-         socket.emit('CollisionResult', id, tobeadded,gameNumber);
+         socket.emit('CollisionResult', id, tobeadded, gameNumber);
      }
  }
 
@@ -1472,7 +1489,7 @@ location.reload();
      // Dealing with all of the possible moves that can be created when the first playerpiece is in one of six columns
 
      for (var i = beginningOfPlayerPieceTwoRow; i <= beginningOfPlayerPieceTwoRow + 5; i++) {
-         var currentUnoccupiedSpace = firstUnoccupiedSpaceInColumn(i,grid);
+         var currentUnoccupiedSpace = firstUnoccupiedSpaceInColumn(i, grid);
          var playerPieceTwoDestination = currentUnoccupiedSpace;
          // Only place this piece in that column if there's room in that column assuming piece is vertical
          if (playerPieceTwoDestination > 5)
@@ -1483,15 +1500,15 @@ location.reload();
 
              // if one to the left leads you to the last element in the row above you then you were on the left edge of the board
              // other conditiion is there are no unoccupied spaces to the left
-             if ((playerPieceTwoDestination - 1) % 6 != 5 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1,grid) != -1) {
-                 var firstUnoccupiedPlaceToTheLeft = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1,grid);
+             if ((playerPieceTwoDestination - 1) % 6 != 5 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1, grid) != -1) {
+                 var firstUnoccupiedPlaceToTheLeft = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1, grid);
                  //     console.log(new move(playerPieceOneGridNumber,playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheLeft, playerPieceTwoDestination).toString());
                  moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheLeft, playerPieceTwoDestination));
 
              }
 
-             if ((playerPieceTwoDestination + 1) % 6 != 0 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1,grid) != -1) {
-                 var firstUnoccupiedPlaceToTheRight = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1,grid);
+             if ((playerPieceTwoDestination + 1) % 6 != 0 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1, grid) != -1) {
+                 var firstUnoccupiedPlaceToTheRight = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1, grid);
                  //   console.log(new move(playerPieceOneGridNumber,playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheRight, playerPieceTwoDestination).toString());
                  moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheRight, playerPieceTwoDestination));
 
@@ -1532,10 +1549,10 @@ location.reload();
          keyPresses.push(88);
 
      var numMovesLeft = (curMove.secondOriginalPosition % 6) - (curMove.secondPostMovePosition % 6);
-console.log(numMovesLeft+" indexoutput");
+     console.log(numMovesLeft + " indexoutput");
      // If numMovesLeft is negative then the absolute value of that gives us how many times to go right, you only go either left or right.
 
-console.log(numMovesLeft);
+     console.log(numMovesLeft);
      if (numMovesLeft < 0) {
          var numMovesRight = Math.abs(numMovesLeft);
          for (var i = 0; i < numMovesRight; i++) {
@@ -1543,7 +1560,7 @@ console.log(numMovesLeft);
          }
      } else if (numMovesLeft > 0) {
          for (var i = 0; i < numMovesLeft; i++) {
-            console.log("shouldbehere");
+             console.log("shouldbehere");
              keyPresses.push(37);
          }
      }
@@ -1558,7 +1575,7 @@ console.log(numMovesLeft);
      var availableMoves = this.availableMoves();
      var randomMove = availableMoves[Math.floor((Math.random() * availableMoves.length))];
      var keyPresses = generateKeyPresses(randomMove);
-  
+
 
 
      var evaluateKeyPresses = setInterval(
