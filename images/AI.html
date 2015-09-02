@@ -38,16 +38,18 @@
  intervals = [];
  //Insures that even if speeding up there is a delay before the next piece falls.
  //Key values
+ IMAGEWIDTH = Math.floor((window.parent.innerWidth / 2.7) / 10.2);
  LEFT = 37;
  RIGHT = 39;
  COUNTERCLOCK = 90;
  CLOCKWISE = 88;
  SPEEDUP = 40;
  INSTANT = 38;
- LEFTMOST = generateLeftMost(window.innerWidth);
- otherLeftMost = generateOtherLeftMost(window.innerWidth);
- MAXHEIGHT = 648 + 72 * 3;
- DISTANCEBETWEEN = 260;
+ DISTANCEBETWEEN = window.parent.innerWidth / 8;
+ LEFTMOST = generateLeftMost(window.parent.innerWidth);
+ RIGHTMOST =LEFTMOST + IMAGEWIDTH * 5;
+ otherLeftMost = generateOtherLeftMost(window.parent.innerWidth);
+ MAXHEIGHT = IMAGEWIDTH * 9 + IMAGEWIDTH * 3.5;
  ADDITONALSBLOCKSSMULTIPLIER = 2;
 
  socket.on('connect', function() {
@@ -141,10 +143,10 @@ function deepCopy(obj) {
  function playerpiece(color1, color2, image1, image2) {
          this.color1 = color1;
          this.color2 = color2;
-         this.xcoordinate1 = LEFTMOST + 144;
-         this.ycoordinate1 = MAXHEIGHT - 648;
-         this.xcoordinate2 = LEFTMOST + 144;
-         this.ycoordinate2 = MAXHEIGHT - 576;
+         this.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
+         this.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
+         this.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
+         this.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
          this.image1 = image1;
          this.image2 = image2;
          this.case = 1;
@@ -191,8 +193,8 @@ function deepCopy(obj) {
      };
 
      playerpiece = new playerpiece();
-     for (var y = MAXHEIGHT - 648; y <= MAXHEIGHT; y = y + 72) {
-         for (var x = LEFTMOST; x <= LEFTMOST + 360; x = x + 72) {
+     for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
+         for (var x = LEFTMOST; x <= LEFTMOST + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
              grid.push(new block(x, y, preloadedImages["empty"]));
          }
      }
@@ -207,8 +209,8 @@ function deepCopy(obj) {
 
      otherGrid = [];
 
-     for (var y = MAXHEIGHT - 648; y <= MAXHEIGHT; y = y + 72) {
-         for (var x = otherLeftMost; x <= otherLeftMost + 360; x = x + 72) {
+     for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
+         for (var x = otherLeftMost; x <= otherLeftMost + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
              otherGrid.push(new block(x, y, preloadedImages["empty"]));
          }
      }
@@ -222,7 +224,7 @@ function deepCopy(obj) {
      draw();
      intervals.push(setInterval(draw, 1000));
      j = setInterval(sendUpdateToSocket, 200);
-     socket.emit('initialized', id, window.innerWidth, window.innerHeight,gameNumber);
+     socket.emit('initialized', id, window.parent.innerWidth, window.parent.innerHeight,gameNumber);
  }
 
  function newDeleteArray() {
@@ -230,12 +232,12 @@ function deepCopy(obj) {
      newarray = new Array();
      for (var j = 0; j < grid.length; j++) {
          grid[j].visited = false;
-         if (grid[j].ycoordinate + 72 <= MAXHEIGHT && findGrid(grid[j].xcoordinate, grid[j].ycoordinate, grid).color != "none" && findGrid(grid[j].xcoordinate, grid[j].ycoordinate + 72, grid).color == "none") {
+         if (grid[j].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[j].xcoordinate, grid[j].ycoordinate, grid).color != "none" && findGrid(grid[j].xcoordinate, grid[j].ycoordinate + IMAGEWIDTH, grid).color == "none") {
              animatedeletion = true;
              playerpiece.ycoordinate1 = -20000;
              playerpiece.ycoordinate2 = -20000;
              column = new Array();
-             for (var z = grid[j].ycoordinate; z >= 0; z = z - 72) {
+             for (var z = grid[j].ycoordinate; z >= 0; z = z - IMAGEWIDTH) {
                  if (findGrid(grid[j].xcoordinate, z, grid).color != "none") column.push(findGrid(grid[j].xcoordinate, z, grid));
              }
              newarray.push(column);
@@ -276,11 +278,11 @@ function deepCopy(obj) {
                          deletearray[p][k].color = "none";
                          deletearray[p][k].breaker = false;
 
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).image = oldImage;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).color = oldColor;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).blocked = oldBlockedStatus;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).occupied = true;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + 72, grid).breaker = oldBreakerStatus;
+                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).image = oldImage;
+                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).color = oldColor;
+                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).blocked = oldBlockedStatus;
+                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).occupied = true;
+                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).breaker = oldBreakerStatus;
 
                      }
                  }
@@ -296,8 +298,8 @@ function deepCopy(obj) {
                    If not, we fall like usual, if this is the case the piece will fall like usual next time*/
              else {
                  if (situational == false) {
-                     playerpiece.ycoordinate1 += 72;
-                     playerpiece.ycoordinate2 += 72;
+                     playerpiece.ycoordinate1 += IMAGEWIDTH;
+                     playerpiece.ycoordinate2 += IMAGEWIDTH;
                  } else situational = false;
                  //This always happens whether or not the piece has fallen it's current location should show up as the piece so a newimage is appended to it's location            
              }
@@ -370,10 +372,10 @@ function deepCopy(obj) {
          squaretwocollide = false;
          bothcollided = false;
          for (var i = 0; i < grid.length; i++) {
-             if ((grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 && grid[i].occupied == true) || playerpiece.ycoordinate1 == MAXHEIGHT) {
+             if ((grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate1 == MAXHEIGHT) {
                  squareonecollide = true;
              }
-             if ((grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + 72 && grid[i].occupied == true) || playerpiece.ycoordinate2 == MAXHEIGHT) {
+             if ((grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate2 == MAXHEIGHT) {
                  squaretwocollide = true;;
              }
          }
@@ -470,10 +472,10 @@ function deepCopy(obj) {
 
  function isoccupied() {
      for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 && grid[i].occupied == true) {
+         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) {
              return true;
          }
-         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + 72 && grid[i].occupied == true) {
+         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) {
              1
              return true;
          }
@@ -483,27 +485,27 @@ function deepCopy(obj) {
 
  function isoccupiedkeypress(direction) {
      if (direction == RIGHT) {
-         if (playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.xcoordinate2 + 72 > LEFTMOST + 360) return true;
+         if (playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.xcoordinate2 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5) return true;
          if (playerpiece.case == 1 || playerpiece.case == 3) {
              for (var i = 0; i < grid.length; i++) {
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
                      return true;
                  }
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                      return true;
                  }
              }
          } else {
              if (playerpiece.case == 4) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
              }
              if (playerpiece.case == 2) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
@@ -511,27 +513,27 @@ function deepCopy(obj) {
          }
      }
      if (direction == LEFT) {
-         if (playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.xcoordinate2 - 72 < LEFTMOST) return true;
+         if (playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.xcoordinate2 - IMAGEWIDTH < LEFTMOST) return true;
          if (playerpiece.case == 1 || playerpiece.case == 3) {
              for (var i = 0; i < grid.length; i++) {
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
                      return true;
                  }
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                      return true;
                  }
              }
          } else {
              if (playerpiece.case == 2) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
              }
              if (playerpiece.case == 4) {
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH  && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
                          return true;
                      }
                  }
@@ -583,15 +585,15 @@ function deepCopy(obj) {
      } else {
          if (direction == LEFT && !isoccupiedkeypress(direction) && delay == false) {
              unoccupy(playerpiece);
-             playerpiece.xcoordinate1 -= 72;
-             playerpiece.xcoordinate2 -= 72;
+             playerpiece.xcoordinate1 -= IMAGEWIDTH;
+             playerpiece.xcoordinate2 -= IMAGEWIDTH;
              situational = true;
              draw();
          }
          if (direction == RIGHT && !isoccupiedkeypress(direction) && delay == false) {
              unoccupy(playerpiece);
-             playerpiece.xcoordinate1 += 72;
-             playerpiece.xcoordinate2 += 72;
+             playerpiece.xcoordinate1 += IMAGEWIDTH;
+             playerpiece.xcoordinate2 += IMAGEWIDTH;
              situational = true;
              draw();
          }
@@ -610,10 +612,10 @@ function deepCopy(obj) {
 
     // drawFuturePieces();
 
-     playerpiece.xcoordinate1 = LEFTMOST + 144;
-     playerpiece.xcoordinate2 = LEFTMOST + 144;
-     playerpiece.ycoordinate1 = MAXHEIGHT - 648;
-     playerpiece.ycoordinate2 = MAXHEIGHT - 576;
+     playerpiece.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
+     playerpiece.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
+     playerpiece.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
+     playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
      playerpiece.image1 = imgarray[firstplayerpiece];
      playerpiece.color1 = colorarray[firstplayerpiece];
 
@@ -622,8 +624,8 @@ function deepCopy(obj) {
      playerpiece.case = 1;
      situational = true;
     if (grid[8].occupied == true) {
-         playerpiece.xcoordinate2 = LEFTMOST+216;
-         playerpiece.ycoordinate2 = MAXHEIGHT - 648;
+         playerpiece.xcoordinate2 = LEFTMOST+ IMAGEWIDTH * 3;
+         playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 9;
      }
          aiMakeMove();
      
@@ -638,27 +640,27 @@ function deepCopy(obj) {
              situational = true;
              switch (position) {
                  case 1:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.case = 4;
                      draw();
                      break;
                  case 2:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.case = 1;
                      draw();
                      break;
                  case 3:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.case = 2;
                      draw();
                      break;
                  case 4:
 
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.case = 3;
                      draw();
                      break;
@@ -670,29 +672,29 @@ function deepCopy(obj) {
              situational = true;
              switch (position) {
                  case 1:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.
                      case = 2;
                      draw();
                      break;
                  case 2:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
                      playerpiece.
                      case = 3;
                      draw();
                      break;
                  case 3:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.
                      case = 4;
                      draw();
                      break;
                  case 4:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + 72;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - 72;
+                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
                      playerpiece.
                      case = 1;
                      draw();
@@ -708,32 +710,32 @@ function deepCopy(obj) {
          switch (position) {
              case 1:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
                  break;
              case 2:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
                  break;
              case 3:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
                  break;
              case 4:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
@@ -744,31 +746,31 @@ function deepCopy(obj) {
          switch (position) {
              case 1:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
                  break;
              case 2:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 + 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 + 72 > MAXHEIGHT) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
                          return true;
                      }
                  }
                  break;
              case 3:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - 72 < LEFTMOST || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
                  break;
              case 4:
                  for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + 72 && grid[i].ycoordinate == playerpiece.ycoordinate1 - 72 && grid[i].occupied == true || playerpiece.xcoordinate1 + 72 > LEFTMOST + 360 || playerpiece.ycoordinate1 - 72 < 0) {
+                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH && grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
                          return true;
                      }
                  }
@@ -816,14 +818,14 @@ function deepCopy(obj) {
      ycoordinate = gridpiece.ycoordinate;
 
      originalSquare = findGrid(xcoordinate, ycoordinate, grid);
-     topSquare = findGrid(xcoordinate, ycoordinate + 72, grid);
-     rightSquare = findGrid(xcoordinate + 72, ycoordinate, grid);
-     bottomSquare = findGrid(xcoordinate, ycoordinate - 72, grid);
-     rightBottomSquare = findGrid(xcoordinate + 72, ycoordinate - 72, grid);
-     rightTopSquare = findGrid(xcoordinate + 72, ycoordinate + 72, grid);
-     leftSquare = findGrid(xcoordinate - 72, ycoordinate, grid);
-     leftTopSquare = findGrid(xcoordinate - 72, ycoordinate + 72, grid);
-     leftBottomSquare = findGrid(xcoordinate - 72, ycoordinate - 72, grid);
+     topSquare = findGrid(xcoordinate, ycoordinate + IMAGEWIDTH, grid);
+     rightSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate, grid);
+     bottomSquare = findGrid(xcoordinate, ycoordinate - IMAGEWIDTH, grid);
+     rightBottomSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
+     rightTopSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
+     leftSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate, grid);
+     leftTopSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
+     leftBottomSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
 
      if (gridpiece.breaker == false) {
          if (noneAreBreakers(rightSquare, bottomSquare, rightBottomSquare) && (rightSquare.color == gridpiece.color) && bottomSquare.color == gridpiece.color &&
@@ -1096,10 +1098,10 @@ function deepCopy(obj) {
                      break;
              }
 
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate + 72, gridpiece.ycoordinate, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate - 72, gridpiece.ycoordinate, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate + 72, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate - 72, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate + IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate - IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate + IMAGEWIDTH, grid), grid);
+             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate - IMAGEWIDTH, grid), grid);
 
          }
      }
@@ -1112,7 +1114,7 @@ function deepCopy(obj) {
 
  function needsAnimation(grid) {
      for (var e = 0; e < grid.length; e++) {
-         if (grid[e].ycoordinate + 72 <= MAXHEIGHT && findGrid(grid[e].xcoordinate, grid[e].ycoordinate, grid).color != "none" && findGrid(grid[e].xcoordinate, grid[e].ycoordinate + 72, grid).color == "none") {
+         if (grid[e].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[e].xcoordinate, grid[e].ycoordinate, grid).color != "none" && findGrid(grid[e].xcoordinate, grid[e].ycoordinate + IMAGEWIDTH, grid).color == "none") {
              return true;
          }
      }
@@ -1132,12 +1134,14 @@ function deepCopy(obj) {
          newimage.style.position = "absolute ";
          newimage.style.left = playerpiece.xcoordinate1 + "px ";
          newimage.style.top = playerpiece.ycoordinate1 + "px ";
+         newimage.width = IMAGEWIDTH;
          playerElements.appendChild(newimage);
          newimage = document.createElement('img');
          newimage.src = playerpiece.image2;
          newimage.style.position = "absolute ";
          newimage.style.left = playerpiece.xcoordinate2 + "px ";
          newimage.style.top = playerpiece.ycoordinate2 + "px ";
+         newimage.width = IMAGEWIDTH;
          playerElements.appendChild(newimage);
      }
  }
@@ -1150,7 +1154,7 @@ function deepCopy(obj) {
      scoreDisplay.innerHTML = "Score:" + score;
      scoreDisplay.style.position = "absolute ";
      scoreDisplay.style.left = LEFTMOST;
-     scoreDisplay.style.top = MAXHEIGHT - 720;
+     scoreDisplay.style.top = MAXHEIGHT - IMAGEWIDTH * 10;
      playerElements.appendChild(scoreDisplay);
 
      if (otherGrid == true) {
@@ -1164,6 +1168,7 @@ function deepCopy(obj) {
          newimage.style.position = "absolute ";
          newimage.style.left = grid[d].xcoordinate + "px ";
          newimage.style.top = grid[d].ycoordinate + "px ";
+         newimage.width = IMAGEWIDTH;
          toAppendTo.appendChild(newimage);
 
      }
@@ -1173,35 +1178,13 @@ function deepCopy(obj) {
          newimage.style.position = "absolute ";
          newimage.style.left = grid[2].xcoordinate + "px ";
          newimage.style.top = grid[2].ycoordinate + "px ";
+         newimage.width = IMAGEWIDTH;
          toAppendTo.appendChild(newimage);
      }
  }
 
- function drawFuturePieces() {
-     heading = document.createElement('h1');
-     heading.innerHTML = "Next ";
-     heading.style.position = "absolute ";
-     heading.style.left = LEFTMOST + 465;
-     heading.style.top = MAXHEIGHT + 10 - 688;
-     playerElements.appendChild(heading);
-
-     nextplayerimage1 = document.createElement('img');
-     nextplayerimage1.src = imgarray[nextselection1];
-     nextplayerimage1.style.position = "absolute ";
-     nextplayerimage1.style.left = 465 + LEFTMOST;
-     nextplayerimage1.style.top = MAXHEIGHT + 40 - 648;
-     playerElements.appendChild(nextplayerimage1);
-
-     nextplayerimage2 = document.createElement('img');
-     nextplayerimage2.src = imgarray[nextselection2];
-     nextplayerimage2.style.position = "absolute ";
-     nextplayerimage2.style.left = 465 + LEFTMOST;
-     nextplayerimage2.style.top = MAXHEIGHT + 110 - 648;
-     playerElements.appendChild(nextplayerimage2);
- }
-
  function drawOpponent(grid, playerpiece, windowWidth, windowHeight) {
-     widthdifference = window.innerWidth / windowWidth;
+     widthdifference = window.parent.innerWidth / windowWidth;
      adjustedwidth = widthdifference * windowWidth;
      oldLeftMost = generateLeftMost(windowWidth);
      oldOtherLeftMost = generateOtherLeftMost(windowWidth);
@@ -1217,6 +1200,7 @@ function deepCopy(obj) {
          newimage.style.position = "absolute ";
          newimage.style.left = grid[d].xcoordinate - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
          newimage.style.top = grid[d].ycoordinate + "px ";
+         newimage.width = IMAGEWIDTH;
          opponentElements.appendChild(newimage);
      }
 
@@ -1225,6 +1209,7 @@ function deepCopy(obj) {
      newimage.style.position = "absolute ";
      newimage.style.left = playerpiece.xcoordinate1 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
      newimage.style.top = playerpiece.ycoordinate1 + "px ";
+     newimage.width = IMAGEWIDTH;
      opponentElements.appendChild(newimage);
 
      newimage = document.createElement('img');
@@ -1232,28 +1217,20 @@ function deepCopy(obj) {
      newimage.style.position = "absolute ";
      newimage.style.left = playerpiece.xcoordinate2 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
      newimage.style.top = playerpiece.ycoordinate2 + "px ";
+     newimage.width = IMAGEWIDTH;
      opponentElements.appendChild(newimage);
 
  }
 
  function generateLeftMost(windowWidth) {
-     DISTANCEBETWEEN = 260;
-     LeftMost = windowWidth / 4.5;
-     otherPlayerLeftMost = windowWidth / 1.7;
-     rightMost = LeftMost + 360;
-     adjustment = (DISTANCEBETWEEN - (otherPlayerLeftMost - rightMost)) / 2;
-     rightMost = rightMost - adjustment;
-     return rightMost - 360;
+   LeftMost = windowWidth / 4;
+   return Math.floor(LeftMost);
  }
 
  function generateOtherLeftMost(windowWidth) {
-     DISTANCEBETWEEN = 260;
-     LeftMost = windowWidth / 4.5;
-     otherPlayerLeftMost = windowWidth / 1.7;
-     rightMost = LeftMost + 360;
-     adjustment = (DISTANCEBETWEEN - (otherPlayerLeftMost - rightMost)) / 2;
-     rightMost = rightMost - adjustment;
-     return otherPlayerLeftMost + adjustment;
+    LeftMost = windowWidth / 4;
+    rightMost = LeftMost + IMAGEWIDTH * 6;
+    return Math.floor(rightMost + DISTANCEBETWEEN);
 
  }
 
