@@ -1,4 +1,4 @@
-<script type="text/javascript" src="http://puzzleroyalealpha.herokuapp.com/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://localhost:8080/socket.io/socket.io.js"></script>
 <html>
 
 <head>
@@ -12,7 +12,7 @@
     <script type="text/javascript ">
         // controls whether or not the draw function changes the player piece's y coordinates at the start of the game this shouldn't happen if player moves along
 
- socket = io.connect('http://puzzleroyalealpha.herokuapp.com/');
+ socket = io.connect('http://localhost:8080');
 
  gameNumber=-1;
  otherPlayerStillPlaying=true;
@@ -38,17 +38,17 @@
  intervals = [];
  //Insures that even if speeding up there is a delay before the next piece falls.
  //Key values
- IMAGEWIDTH = Math.floor((window.innerWidth / 2.7) / 10.2);
+ IMAGEWIDTH = Math.floor((window.parent.innerWidth / 2.7) / 10.2);
  LEFT = 37;
  RIGHT = 39;
  COUNTERCLOCK = 90;
  CLOCKWISE = 88;
  SPEEDUP = 40;
  INSTANT = 38;
- DISTANCEBETWEEN = window.innerWidth / 8;
- LEFTMOST = generateLeftMost(window.innerWidth);
+ DISTANCEBETWEEN = window.parent.innerWidth / 8;
+ LEFTMOST = generateLeftMost(window.parent.innerWidth);
  RIGHTMOST =LEFTMOST + IMAGEWIDTH * 5;
- otherLeftMost = generateOtherLeftMost(window.innerWidth);
+ otherLeftMost = generateOtherLeftMost(window.parent.innerWidth);
  MAXHEIGHT = IMAGEWIDTH * 9 + IMAGEWIDTH * 3.5;
  ADDITONALSBLOCKSSMULTIPLIER = 2;
 
@@ -224,7 +224,7 @@ function deepCopy(obj) {
      draw();
      intervals.push(setInterval(draw, 1000));
      j = setInterval(sendUpdateToSocket, 200);
-     socket.emit('initialized', id, window.innerWidth, window.innerHeight,gameNumber);
+     socket.emit('initialized', id, window.parent.innerWidth, window.parent.innerHeight,gameNumber);
  }
 
  function newDeleteArray() {
@@ -1184,7 +1184,7 @@ function deepCopy(obj) {
  }
 
  function drawOpponent(grid, playerpiece, windowWidth, windowHeight) {
-     widthdifference = window.innerWidth / windowWidth;
+     widthdifference = window.parent.innerWidth / windowWidth;
      adjustedwidth = widthdifference * windowWidth;
      oldLeftMost = generateLeftMost(windowWidth);
      oldOtherLeftMost = generateOtherLeftMost(windowWidth);

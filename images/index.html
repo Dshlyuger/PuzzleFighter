@@ -1,4 +1,4 @@
-<script type="text/javascript" src="http://puzzleroyalealpha.herokuapp.com/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="http://localhost:8080/socket.io/socket.io.js"></script>
 
 <html onkeydown="evaluateKeyPress(event)">
 
@@ -35,7 +35,7 @@
 
 
 
- socket = io.connect('http://puzzleroyalealpha.herokuapp.com/');
+ socket = io.connect('http://localhost:8080');
  multiPlayer = false;
  puzzleMove = new Audio('puzzlemove.wav');
  breakPiece = new Audio('breakPiece.wav');

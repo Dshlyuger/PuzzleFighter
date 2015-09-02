@@ -25,7 +25,7 @@ singlePlayer = false;
 app.use(express.compress());
 app.use(express.static(__dirname + '/images'));
 
-server.listen((process.env.PORT || 5000));
+server.listen(8080);
 
 
 io.sockets.on('connection', function(socket) {
