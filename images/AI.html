@@ -1,1636 +1,1407 @@
 <script type="text/javascript" src="http://puzzleroyalealpha.herokuapp.com/socket.io/socket.io.js"></script>
 <html>
-
-<head>
-</head>
-
-<body style="background-color:#380B61">
-
-    <div id="playerElements"></div>
-    <div id="opponentElements"></div>
-
-    <script type="text/javascript ">
-        // controls whether or not the draw function changes the player piece's y coordinates at the start of the game this shouldn't happen if player moves along
-
- socket = io.connect('http://puzzleroyalealpha.herokuapp.com/');
-
- gameNumber=-1;
- otherPlayerStillPlaying=true;
- id = socket.sessionid;
- situational = true;
- delay = false;
- onepieceanimate = false;
- animatedeletion = false;
- deletearray = [];
- playerElements = document.getElementById("playerElements");
- opponentElements = document.getElementById("opponentElements");
- score = 0;
- brokengems = 0;
- bluesquared = 0;
- redsquared = 0;
- greensquared = 0;
- yellowsquared = 0;
- enemypoints = 0;
- enemyTickingBlockImages = ["counterred2.png", "counterred3.png", "counterred1.png", "counterred4.png", "counterred.png", "counterblue2.png", "counterblue3.png", "counterblue1.png", "counterblue4.png", "counterblue.png", "countergreen2.png", "countergreen3.png", "countergreen1.png", "countergreen4.png", "countergreen.png", "co/8unteryellow2.png", "counteryellow3.png", "counteryellow1.png", "counteryellow4.png", "counteryellow.png"];
- AiMoveEvaluation=false;
-
- pointsPerBlock = 40;
- intervals = [];
- //Insures that even if speeding up there is a delay before the next piece falls.
- //Key values
- IMAGEWIDTH = Math.floor((window.parent.innerWidth / 2.7) / 10.2);
- LEFT = 37;
- RIGHT = 39;
- COUNTERCLOCK = 90;
- CLOCKWISE = 88;
- SPEEDUP = 40;
- INSTANT = 38;
- DISTANCEBETWEEN = window.parent.innerWidth / 8;
- LEFTMOST = generateLeftMost(window.parent.innerWidth);
- RIGHTMOST =LEFTMOST + IMAGEWIDTH * 5;
- otherLeftMost = generateOtherLeftMost(window.parent.innerWidth);
- MAXHEIGHT = IMAGEWIDTH * 9 + IMAGEWIDTH * 3.5;
- ADDITONALSBLOCKSSMULTIPLIER = 2;
-
- socket.on('connect', function() {
-     id = this.socket.sessionid;
- });
- socket.on('matched', function(number) {
-     gameNumber = parseInt(number);
-     grid = [];
-     initialize();
-
- });
-
- socket.on('gameOver', function() {
-    otherPlayerStillPlaying=false;
-    clearIntervals();
-  
-     
- });
- socket.on('updateOtherPlayer', function(grid, playerpiece, windowWidth, windowHeight) {
-     //drawOpponent(grid, playerpiece, windowWidth, windowHeight);
-
- });
-
- socket.on('registerCollisionResult', function(totalpoints) {
-     enemypoints = enemypoints + totalpoints;
- });
-
-
-function deepCopy(obj) {
-    if (Object.prototype.toString.call(obj) === '[object Array]') {
-        var out = [], i = 0, len = obj.length;
-        for ( ; i < len; i++ ) {
-            out[i] = arguments.callee(obj[i]);
-        }
-        return out;
-    }
-    if (typeof obj === 'object') {
-        var out = {}, i;
-        for ( i in obj ) {
-            out[i] = arguments.callee(obj[i]);
-        }
-        return out;
-    }
-    return obj;
-}
-
-
- // dictates how fast the piece drops increases if down key is pressed
- //coordinates 
- function sendUpdateToSocket() {
-     socket.emit('playerMove', id, grid, playerpiece,gameNumber);
-
- }
-
- function holdImg(e) {
-         derp.innerHTML = "" + e.clientX + "px ";
-         herp.innerHTML = "" + e.clientY + "px ";
-     }
-     //block object
-
- function block(x, y, picture) {
-     this.occupied = false;
-     this.color = "none";
-     this.xcoordinate = x;
-     this.ycoordinate = y;
-     this.image = picture;
-     this.blocked = false;
-     this.visited = false;
-     this.breaker = false;
- }
-
-
- block.prototype.toString = function blockToString() {
-     return this.xcoordinate + " " + this.ycoordinate + " " + this.color + " " + this.breaker;
- }
-
- function move(firstOriginalPosition, secondOriginalPosition, firstPostMovePosition, secondPostMovePosition) {
-     this.firstOriginalPosition = firstOriginalPosition;
-     this.secondOriginalPosition = secondOriginalPosition;
-     this.firstPostMovePosition = firstPostMovePosition;
-     this.secondPostMovePosition = secondPostMovePosition;
- }
-
- move.prototype.toString = function() {
-     return this.firstOriginalPosition + " " + this.secondOriginalPosition + " " + this.firstPostMovePosition + " " + this.secondPostMovePosition;
- }
-
-
-
-
- function playerpiece(color1, color2, image1, image2) {
-         this.color1 = color1;
-         this.color2 = color2;
-         this.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
-         this.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
-         this.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
-         this.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
-         this.image1 = image1;
-         this.image2 = image2;
-         this.case = 1;
-     }
-     // initialize grid
-
- function initialize() {
-     // preload images
-     preloadedImages = {
-         "empty": new Image().src = "empty.png",
-         "blue": new Image().src = "blue.png",
-         "yellowsquared": new Image().src = "yellowsquared.png",
-         "yellowbreaker": new Image().src = "yellowbreaker.png",
-         "yellow": new Image().src = "yellow.png",
-         "redsquared": new Image().src = "redsquared.png",
-         "red": new Image().src = "red.png",
-         "redbreaker": new Image().src = "redbreaker.png",
-         "greensquared": new Image().src = "greensquared.png",
-         "green": new Image().src = "green.png",
-         "greenbreaker": new Image().src = "greenbreaker.png",
-         "greengreen": new Image().src = "greengreen.png",
-         "bluebreaker": new Image().src = "bluebreaker.png",
-         "bluesquared": new Image().src = "bluesquared.png",
-         "counterred": new Image().src = "counterred.png",
-         "counterred4": new Image().src = "counterred4.png",
-         "counterred3": new Image().src = "counterred3.png",
-         "counterred2": new Image().src = "counterred2.png",
-         "counterred1": new Image().src = "counterred1.png",
-         "counterblue": new Image().src = "counterblue.png",
-         "counterblue4": new Image().src = "counterblue4.png",
-         "counterblue3": new Image().src = "counterblue3.png",
-         "counterblue2": new Image().src = "counterblue2.png",
-         "counterblue1": new Image().src = "counterblue1.png",
-         "countergreen": new Image().src = "countergreen.png",
-         "countergreen4": new Image().src = "countergreen4.png",
-         "countergreen3": new Image().src = "countergreen3.png",
-         "countergreen2": new Image().src = "countergreen2.png",
-         "countergreen1": new Image().src = "countergreen1.png",
-         "counteryellow": new Image().src = "counteryellow.png",
-         "counteryellow4": new Image().src = "counteryellow4.png",
-         "counteryellow3": new Image().src = "counteryellow3.png",
-         "counteryellow2": new Image().src = "counteryellow2.png",
-         "counteryellow1": new Image().src = "counteryellow1.png"
-     };
-
-     playerpiece = new playerpiece();
-     for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
-         for (var x = LEFTMOST; x <= LEFTMOST + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
-             grid.push(new block(x, y, preloadedImages["empty"]));
-         }
-     }
-
-
-     nextselection1 = Math.floor((Math.random() * 8));
-     nextselection2 = Math.floor((Math.random() * 8));
-
-
-     createPlayerPiece();
-     //Initializes other player
-
-     otherGrid = [];
-
-     for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
-         for (var x = otherLeftMost; x <= otherLeftMost + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
-             otherGrid.push(new block(x, y, preloadedImages["empty"]));
-         }
-     }
-     scoreDisplay = document.createElement('h1');
-     scoreDisplay.id = "display";
-     playerElements.appendChild(scoreDisplay);
-
-
-   //  drawNonPlayerPieces(otherGrid, true);
-
-     draw();
-     intervals.push(setInterval(draw, 1000));
-     j = setInterval(sendUpdateToSocket, 200);
-     socket.emit('initialized', id, window.parent.innerWidth, window.parent.innerHeight,gameNumber);
- }
-
- function newDeleteArray() {
-
-     newarray = new Array();
-     for (var j = 0; j < grid.length; j++) {
-         grid[j].visited = false;
-         if (grid[j].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[j].xcoordinate, grid[j].ycoordinate, grid).color != "none" && findGrid(grid[j].xcoordinate, grid[j].ycoordinate + IMAGEWIDTH, grid).color == "none") {
-             animatedeletion = true;
-             playerpiece.ycoordinate1 = -20000;
-             playerpiece.ycoordinate2 = -20000;
-             column = new Array();
-             for (var z = grid[j].ycoordinate; z >= 0; z = z - IMAGEWIDTH) {
-                 if (findGrid(grid[j].xcoordinate, z, grid).color != "none") column.push(findGrid(grid[j].xcoordinate, z, grid));
-             }
-             newarray.push(column);
-         }
-     }
-     return newarray;
- }
-
- function draw() {
-        
-      //   drawFuturePieces();
-         gameover = grid[2].occupied;
-
-
-          if(gameover && !animatedeletion){
-            clearIntervals();
-            socket.emit('aiLost',gameNumber);
-         }
-
-         //Checks all conditions where nothing should be done/game is over or if nothing should be animated except the pieces which need to fall after deletion
-         if ((gameover && grid[2].image != preloadedImages["empty"] && onepieceanimate != true) || (delay && onepieceanimate != true) || animatedeletion) {
-             if (animatedeletion) {
-                 playerpiece.ycoordinate1 = -10000;
-                 playerpiece.ycoordinate2 = -10000;
-                 for (var p = 0; p < deletearray.length; p++) {
-                     for (var k = 0; k < deletearray[p].length; k++) {
-                         // Piece is getting animated so we first store all of it's old information which lies in a gridpiece that will now become empty and store that old information
-                         // in the gridpiece below(hence the +72)
-                         oldImage = deletearray[p][k].image;
-                         oldColor = deletearray[p][k].color;
-                         oldBlockedStatus = deletearray[p][k].blocked;
-                         oldBreakerStatus = deletearray[p][k].breaker;
-
-                         //  console.log(deletearray[p][k]+" set to to false");
-                         deletearray[p][k].image = preloadedImages["empty"];
-                         deletearray[p][k].occupied = false;
-                         deletearray[p][k].blocked = false;
-                         deletearray[p][k].color = "none";
-                         deletearray[p][k].breaker = false;
-
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).image = oldImage;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).color = oldColor;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).blocked = oldBlockedStatus;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).occupied = true;
-                         findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).breaker = oldBreakerStatus;
-
-                     }
-                 }
-
-             }
-
-         } else {
-             //Since the piece has the potential to have fallen we unoccupy it's current position
-             if (playerpiece.ycoordinate1 == MAXHEIGHT || playerpiece.ycoordinate2 == MAXHEIGHT || (isoccupied() && situational == false)) {
-                 collision(playerpiece);
-             }
-             /*Situational checks to see if we recently moved left or right, or if it's the start of the game, to prevent extra vertical movement. 
-                   If not, we fall like usual, if this is the case the piece will fall like usual next time*/
-             else {
-                 if (situational == false) {
-                     playerpiece.ycoordinate1 += IMAGEWIDTH;
-                     playerpiece.ycoordinate2 += IMAGEWIDTH;
-                 } else situational = false;
-                 //This always happens whether or not the piece has fallen it's current location should show up as the piece so a newimage is appended to it's location            
-             }
-         }
-         /*Does two things, reconstructs the game board and updates the deletearray with an array of columns full of pieces that need to be animated before the game can resume after a deletion. 
-               Only updates board if there is nothing to animate.*/
-         deletearray = newDeleteArray();
-         if (deletearray.length == 0) {
-             if (animatedeletion == true) {
-
-                 for (var r = 0; r < grid.length; r++) {
-                     if (grid[r].occupied == true) {
-                         if (r >= 54 || grid[r + 6].image != preloadedImages["empty"]) {
-                             var curGridPiece = findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid)
-                             if (!contains(enemyTickingBlockImages, curGridPiece.image)) {
-                                 squareCreator(findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid));
-                                 markfordeletionhelper(grid);
-                                 updateScore();
-                             }
-                         }
-                     }
-                 }
-                 if (needsAnimation(grid)) {
-                     deletearray = newDeleteArray();
-                 } else {
-                     clearIntervals();
-                     intervals.push(setInterval(draw, 1000));
-
-                     animatedeletion = false;
-                     createPlayerPiece();
-                     draw();
-                 }
-             }
-         }
-
-
-   //      drawNonPlayerPieces(grid, false);
- 
-  //           drawPlayerPiece(playerpiece);
-     }
-     // Occupies the grid elements that correspond to where the current piece is located
-
- function occupy(playerpiece) {
-     for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1) {
-             grid[i].occupied = true;
-         }
-         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2) {
-             grid[i].occupied = true;
-         }
-     }
- }
-
- function unoccupy(playerpiece) {
-     for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1) {
-             grid[i].occupied = false;
-         }
-         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2) {
-             grid[i].occupied = false;
-         }
-     }
- }
-
- function collision(playerpiece) {
-     //Case where both squares can collide. This is when  both squares are horizontal
-
-     if (playerpiece.case == 2 || playerpiece.case == 4) {
-         squareonecollide = false;
-         squaretwocollide = false;
-         bothcollided = false;
-         for (var i = 0; i < grid.length; i++) {
-             if ((grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate1 == MAXHEIGHT) {
-                 squareonecollide = true;
-             }
-             if ((grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate2 == MAXHEIGHT) {
-                 squaretwocollide = true;;
-             }
-         }
-         /*If onecollides we animate one of them create, make square, check to see if anything needs to be deleted  and update the grid
-               When only one piece collides delay is set to true and the other piece floats down user can't move because delay is false 
-               only turns true when (again) */
-         if (squareonecollide == true && squaretwocollide == true) bothcollided = true;
-         if (playerpiece.xcoordinate1 == -10000 || playerpiece.xcoordinate2 == -10000) bothcollided = true;
-         if (bothcollided == false) {
-             if (squareonecollide == true) {
-                 gridpiece = findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid);
-                 gridpiece.occupied = true;
-                 gridpiece.image = playerpiece.image1;
-                 if (gridpiece.image == "greenbreaker.png" || gridpiece.image == "redbreaker.png" || gridpiece.image == "bluebreaker.png" || gridpiece.image == "yellowbreaker.png")
-                     gridpiece.breaker = true;
-                 gridpiece.color = playerpiece.color1;
-                 squareCreator(findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid));
-                 squareCreator(findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid));
-                 markfordeletionhelper(grid);
-                 updateScore();
-                 playerpiece.xcoordinate1 = -10000;
-                 playerpiece.ycoordinate1 = -10000;
-                 onepieceanimate = true;
-                 delay = true;
-                 draw();
-                 clearIntervals();
-                 intervals.push(setInterval(draw, 250));
-        //         drawNonPlayerPieces(grid, false);
-                 return;
-             } else {
-                 gridpiece = findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid);
-                 gridpiece.occupied = true;
-                 gridpiece.image = playerpiece.image2;
-                 if (gridpiece.image == "greenbreaker.png" || gridpiece.image == "redbreaker.png" || gridpiece.image == "bluebreaker.png" || gridpiece.image == "yellowbreaker.png")
-                     gridpiece.breaker = true;
-                 gridpiece.color = playerpiece.color2;
-                 squareCreator(findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid));
-                 squareCreator(findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid));
-                 //   console.log(gridpiece.toString);
-                 markfordeletionhelper(grid);
-                 updateScore();
-                 playerpiece.xcoordinate2 = -10000;
-                 playerpiece.ycoordinate2 = -10000;
-                 onepieceanimate = true;
-                 delay = true;
-                 clearIntervals();
-                 intervals.push(setInterval(draw, 250));
-           //      drawNonPlayerPieces(grid, false);
-                 draw();
-                 return;
-             }
-         }
-     }
-     //If both collided we update the grid delete if needed and create our squares
-     onepieceanimate = false;
-
-     for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1) {
-             grid[i].occupied = true;
-             grid[i].image = playerpiece.image1;
-             if (grid[i].image == "greenbreaker.png" || grid[i].image == "redbreaker.png" || grid[i].image == "bluebreaker.png" || grid[i].image == "yellowbreaker.png")
-                 grid[i].breaker = true;
-             grid[i].color = playerpiece.color1;
-             //  console.log(grid[i]+" bothcollided1");
-         }
-         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2) {
-             grid[i].occupied = true;
-             grid[i].image = playerpiece.image2;
-             if (grid[i].image == "greenbreaker.png" || grid[i].image == "redbreaker.png" || grid[i].image == "bluebreaker.png" || grid[i].image == "yellowbreaker.png")
-                 grid[i].breaker = true;
-             grid[i].color = playerpiece.color2;
-             //    console.log(grid[i]+" bothcollided2");
-         }
-     }
-
-     updateEnemyBlocks(grid);
-     squareCreator(findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid));
-     squareCreator(findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid));
-     delay = true;
-     markfordeletionhelper(grid);
-     updateScore();
-    // drawNonPlayerPieces(grid, false);
-     clearIntervals();
-     if (needsAnimation(grid)) {
-         intervals.push(setInterval(draw, 600));
-     } else {
-         intervals.push(setInterval(draw, 1000));
-     }
-     s = setInterval("resetDelay()", 350);
-
-
-
- }
-
- function isoccupied() {
-     for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) {
-             return true;
-         }
-         if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) {
-             1
-             return true;
-         }
-     }
-     return false;
- }
-
- function isoccupiedkeypress(direction) {
-     if (direction == RIGHT) {
-         if (playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.xcoordinate2 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5) return true;
-         if (playerpiece.case == 1 || playerpiece.case == 3) {
-             for (var i = 0; i < grid.length; i++) {
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
-                     return true;
-                 }
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
-                     return true;
-                 }
-             }
-         } else {
-             if (playerpiece.case == 4) {
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
-                         return true;
-                     }
-                 }
-             }
-             if (playerpiece.case == 2) {
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
-                         return true;
-                     }
-                 }
-             }
-         }
-     }
-     if (direction == LEFT) {
-         if (playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.xcoordinate2 - IMAGEWIDTH < LEFTMOST) return true;
-         if (playerpiece.case == 1 || playerpiece.case == 3) {
-             for (var i = 0; i < grid.length; i++) {
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
-                     return true;
-                 }
-                 if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
-                     return true;
-                 }
-             }
-         } else {
-             if (playerpiece.case == 2) {
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
-                         return true;
-                     }
-                 }
-             }
-             if (playerpiece.case == 4) {
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH  && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
-                         return true;
-                     }
-                 }
-             }
-         }
-         return false;
-     }
- }
-
- function evaluateKeyPress(e) {
-     key = e.which;
-     e.preventDefault();
-     if (key == 32) {
-         clearIntervals();
-     }
-     if (key == 16) {
-         //   t = setInterval("draw()", 1000);
-     }
-     if (delay == false) {
-         if (key == INSTANT && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-         }
-         if (key == SPEEDUP && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             draw();
-         }
-         if (key == COUNTERCLOCK && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             rotate(COUNTERCLOCK);
-         }
-         if (key == CLOCKWISE && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             rotate(CLOCKWISE);
-         }
-         if ((key == RIGHT || key == LEFT) && (onepieceanimate != true && animatedeletion != true) && needsAnimation != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             movePiece(key);
-         }
-     }
- }
-
- function movePiece(direction) {
-     gameover = grid[2].occupied;
-     if (gameover && grid[2].image != preloadedImages["empty"]) {
-
-     } else {
-         if (direction == LEFT && !isoccupiedkeypress(direction) && delay == false) {
-             unoccupy(playerpiece);
-             playerpiece.xcoordinate1 -= IMAGEWIDTH;
-             playerpiece.xcoordinate2 -= IMAGEWIDTH;
-             situational = true;
-             draw();
-         }
-         if (direction == RIGHT && !isoccupiedkeypress(direction) && delay == false) {
-             unoccupy(playerpiece);
-             playerpiece.xcoordinate1 += IMAGEWIDTH;
-             playerpiece.xcoordinate2 += IMAGEWIDTH;
-             situational = true;
-             draw();
-         }
-     }
- }
-
- function createPlayerPiece() {
-     imgarray = [preloadedImages["green"], preloadedImages["red"], preloadedImages["blue"], preloadedImages["yellow"], preloadedImages["greenbreaker"], preloadedImages["redbreaker"],
-         preloadedImages["yellowbreaker"], preloadedImages["bluebreaker"]
-     ];
-     colorarray = ["green", "red", "blue", "yellow", "green", "red", "yellow", "blue"];
-     firstplayerpiece = nextselection1;
-     secondplayerpiece = nextselection2;
-     nextselection1 = Math.floor((Math.random() * 8));
-     nextselection2 = Math.floor((Math.random() * 8));
-
-    // drawFuturePieces();
-
-     playerpiece.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
-     playerpiece.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
-     playerpiece.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
-     playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
-     playerpiece.image1 = imgarray[firstplayerpiece];
-     playerpiece.color1 = colorarray[firstplayerpiece];
-
-     playerpiece.image2 = imgarray[secondplayerpiece];
-     playerpiece.color2 = colorarray[secondplayerpiece];
-     playerpiece.case = 1;
-     situational = true;
-    if (grid[8].occupied == true) {
-         playerpiece.xcoordinate2 = LEFTMOST+ IMAGEWIDTH * 3;
-         playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 9;
-     }
-         aiMakeMove();
-     
- }
-
- function rotate(direction) {
-     if (gameover == false) {
-         position = playerpiece.
-         case;
-         if (direction == COUNTERCLOCK && !isoccupiedrotate(direction)) {
-             unoccupy(playerpiece);
-             situational = true;
-             switch (position) {
-                 case 1:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
-                     playerpiece.case = 4;
-                     draw();
-                     break;
-                 case 2:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
-                     playerpiece.case = 1;
-                     draw();
-                     break;
-                 case 3:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
-                     playerpiece.case = 2;
-                     draw();
-                     break;
-                 case 4:
-
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
-                     playerpiece.case = 3;
-                     draw();
-                     break;
-             }
-         }
-         if (direction == CLOCKWISE && !isoccupiedrotate(direction)) {
-
-             unoccupy(playerpiece);
-             situational = true;
-             switch (position) {
-                 case 1:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
-                     playerpiece.
-                     case = 2;
-                     draw();
-                     break;
-                 case 2:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
-                     playerpiece.
-                     case = 3;
-                     draw();
-                     break;
-                 case 3:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
-                     playerpiece.
-                     case = 4;
-                     draw();
-                     break;
-                 case 4:
-                     playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
-                     playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
-                     playerpiece.
-                     case = 1;
-                     draw();
-                     break;
-             }
-         }
-     }
- }
-
- function isoccupiedrotate(direction) {
-     position = playerpiece.case;
-     if (direction == COUNTERCLOCK) {
-         switch (position) {
-             case 1:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
-                         return true;
-                     }
-                 }
-                 break;
-             case 2:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
-                         return true;
-                     }
-                 }
-                 break;
-             case 3:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
-                         return true;
-                     }
-                 }
-                 break;
-             case 4:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
-                         return true;
-                     }
-                 }
-                 break;
-         }
-     }
-     if (direction == CLOCKWISE) {
-         switch (position) {
-             case 1:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
-                         return true;
-                     }
-                 }
-                 break;
-             case 2:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
-                         return true;
-                     }
-                 }
-                 break;
-             case 3:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
-                         grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
-                         return true;
-                     }
-                 }
-                 break;
-             case 4:
-                 for (var i = 0; i < grid.length; i++) {
-                     if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH && grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
-                         return true;
-                     }
-                 }
-                 break;
-         }
-     }
-     return false;
- }
-
- function resetDelay() {
-
-     delay = false;
-     clearInterval(s);
-     if (playerpiece.xcoordinate1 == -10000 || playerpiece.xcoordinate2 == -10000) {
-
-     }
-
-     if (animatedeletion == false) {
-         createPlayerPiece();
-     }
-
- }
-
- function findGrid(xcoordinate, ycoordinate, grid) {
-     for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == xcoordinate && grid[i].ycoordinate == ycoordinate) {
-             return grid[i];
-         }
-     }
-     return new block(-1, -1, "blah.png");
- }
-
- function findGridNumber(xcoordinate, ycoordinate) {
-     for (var i = 0; i < grid.length; i++) {
-         if (grid[i].xcoordinate == xcoordinate && grid[i].ycoordinate == ycoordinate) {
-             return i;
-         }
-     }
-     return -1;
- }
-
- function squareCreator(gridpiece) {
-
-     xcoordinate = gridpiece.xcoordinate;
-     ycoordinate = gridpiece.ycoordinate;
-
-     originalSquare = findGrid(xcoordinate, ycoordinate, grid);
-     topSquare = findGrid(xcoordinate, ycoordinate + IMAGEWIDTH, grid);
-     rightSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate, grid);
-     bottomSquare = findGrid(xcoordinate, ycoordinate - IMAGEWIDTH, grid);
-     rightBottomSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
-     rightTopSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
-     leftSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate, grid);
-     leftTopSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
-     leftBottomSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
-
-     if (gridpiece.breaker == false) {
-         if (noneAreBreakers(rightSquare, bottomSquare, rightBottomSquare) && (rightSquare.color == gridpiece.color) && bottomSquare.color == gridpiece.color &&
-             rightBottomSquare.color == gridpiece.color) {
-
-             if (gridpiece.color == "green") {
-                 rightSquare.blocked = true;
-                 rightBottomSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 rightSquare.image = preloadedImages["greensquared"];
-                 rightBottomSquare.image = preloadedImages["greensquared"];
-                 bottomSquare.image = preloadedImages["greensquared"];
-                 originalSquare.image = preloadedImages["greensquared"];
-             }
-             if (gridpiece.color == "blue") {
-                 rightSquare.blocked = true;
-                 rightBottomSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 rightSquare.image = preloadedImages["bluesquared"];
-                 rightBottomSquare.image = preloadedImages["bluesquared"];
-                 bottomSquare.image = preloadedImages["bluesquared"];
-                 originalSquare.image = preloadedImages["bluesquared"];
-             }
-             if (gridpiece.color == "red") {
-                 rightSquare.blocked = true;
-                 rightBottomSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 rightSquare.image = preloadedImages["redsquared"];
-                 rightBottomSquare.image = preloadedImages["redsquared"];
-                 bottomSquare.image = preloadedImages["redsquared"];
-                 originalSquare.image = preloadedImages["redsquared"];
-             }
-             if (gridpiece.color == "yellow") {
-                 rightSquare.blocked = true;
-                 rightBottomSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 rightSquare.image = preloadedImages["yellowsquared"];
-                 rightBottomSquare.image = preloadedImages["yellowsquared"];
-                 bottomSquare.image = preloadedImages["yellowsquared"];
-                 originalSquare.image = preloadedImages["yellowsquared"];
-             }
-         }
-         if (noneAreBreakers(rightSquare, topSquare, rightTopSquare) && (rightSquare.color == gridpiece.color) && topSquare.color == gridpiece.color &&
-             rightTopSquare.color == gridpiece.color) {
-
-             if (gridpiece.color == "green") {
-                 originalSquare.blocked = true;
-                 rightSquare.blocked = true;
-                 topSquare.blocked = true;
-                 rightTopSquare.blocked = true;
-                 originalSquare.image = preloadedImages["greensquared"];
-                 rightSquare.image = preloadedImages["greensquared"];
-                 topSquare.image = preloadedImages["greensquared"];
-                 rightTopSquare.image = preloadedImages["greensquared"];
-             }
-             if (gridpiece.color == "blue") {
-                 originalSquare.blocked = true;
-                 rightSquare.blocked = true;
-                 topSquare.blocked = true;
-                 rightTopSquare.blocked = true;
-                 originalSquare.image = preloadedImages["bluesquared"];
-                 rightSquare.image = preloadedImages["bluesquared"];
-                 topSquare.image = preloadedImages["bluesquared"];
-                 rightTopSquare.image = preloadedImages["bluesquared"];
-             }
-             if (gridpiece.color == "red") {
-                 originalSquare.blocked = true;
-                 rightSquare.blocked = true;
-                 topSquare.blocked = true;
-                 rightTopSquare.blocked = true;
-                 originalSquare.image = preloadedImages["redsquared"];
-                 rightSquare.image = preloadedImages["redsquared"];
-                 topSquare.image = preloadedImages["redsquared"];
-                 rightTopSquare.image = preloadedImages["redsquared"];
-             }
-             if (gridpiece.color == "yellow") {
-                 originalSquare.blocked = true;
-                 rightSquare.blocked = true;
-                 topSquare.blocked = true;
-                 rightTopSquare.blocked = true;
-                 originalSquare.image = preloadedImages["yellowsquared"];
-                 rightSquare.image = preloadedImages["yellowsquared"];
-                 topSquare.image = preloadedImages["yellowsquared"];
-                 rightTopSquare.image = preloadedImages["yellowsquared"];
-             }
-         }
-         if (noneAreBreakers(leftSquare, topSquare, leftTopSquare) && (leftSquare.color == gridpiece.color) && topSquare.color == gridpiece.color && leftTopSquare.color == gridpiece.color) {
-
-             if (gridpiece.color == "green") {
-                 leftSquare.blocked = true;
-                 topSquare.blocked = true;
-                 leftTopSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftSquare.image = preloadedImages["greensquared"];
-                 topSquare.image = preloadedImages["greensquared"];
-                 leftTopSquare.image = preloadedImages["greensquared"];
-                 originalSquare.image = preloadedImages["greensquared"];
-             }
-             if (gridpiece.color == "red") {
-                 leftSquare.blocked = true;
-                 topSquare.blocked = true;
-                 leftTopSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftSquare.image = preloadedImages["redsquared"];
-                 topSquare.image = preloadedImages["redsquared"];
-                 leftTopSquare.image = preloadedImages["redsquared"];
-                 originalSquare.image = preloadedImages["redsquared"];
-             }
-
-             if (gridpiece.color == "blue") {
-                 leftSquare.blocked = true;
-                 topSquare.blocked = true;
-                 leftTopSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftSquare.image = preloadedImages["bluesquared"];
-                 topSquare.image = preloadedImages["bluesquared"];
-                 leftTopSquare.image = preloadedImages["bluesquared"];
-                 originalSquare.image = preloadedImages["bluesquared"];
-             }
-
-             if (gridpiece.color == "yellow") {
-                 leftSquare.blocked = true;
-                 topSquare.blocked = true;
-                 leftTopSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftSquare.image = preloadedImages["yellowsquared"];
-                 topSquare.image = preloadedImages["yellowsquared"];
-                 leftTopSquare.image = preloadedImages["yellowsquared"];
-                 originalSquare.image = preloadedImages["yellowsquared"];
-             }
-         }
-         if (noneAreBreakers(leftSquare, bottomSquare, leftBottomSquare) && (leftSquare.color == gridpiece.color) && bottomSquare.color == gridpiece.color &&
-             leftBottomSquare.color == gridpiece.color) {
-
-             if (gridpiece.color == "green") {
-                 leftBottomSquare.blocked = true;
-                 leftSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftBottomSquare.image = preloadedImages["greensquared"];
-                 leftSquare.image = preloadedImages["greensquared"];
-                 bottomSquare.image = preloadedImages["greensquared"];
-                 originalSquare.image = preloadedImages["greensquared"];
-
-             }
-             if (gridpiece.color == "red") {
-                 leftBottomSquare.blocked = true;
-                 leftSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftBottomSquare.image = preloadedImages["redsquared"];
-                 leftSquare.image = preloadedImages["redsquared"];
-                 bottomSquare.image = preloadedImages["redsquared"];
-                 originalSquare.image = preloadedImages["redsquared"];
-
-             }
-             if (gridpiece.color == "blue") {
-                 leftBottomSquare.blocked = true;
-                 leftSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftBottomSquare.image = preloadedImages["bluesquared"];
-                 leftSquare.image = preloadedImages["bluesquared"];
-                 bottomSquare.image = preloadedImages["bluesquared"];
-                 originalSquare.image = preloadedImages["bluesquared"];
-
-             }
-             if (gridpiece.color == "yellow") {
-                 leftBottomSquare.blocked = true;
-                 leftSquare.blocked = true;
-                 bottomSquare.blocked = true;
-                 originalSquare.blocked = true;
-                 leftBottomSquare.image = preloadedImages["yellowsquared"];
-                 leftSquare.image = preloadedImages["yellowsquared"];
-                 bottomSquare.image = preloadedImages["yellowsquared"];
-                 originalSquare.image = preloadedImages["yellowsquared"];
-
-             }
-         }
-     }
- }
-
- function noneAreBreakers(gridpiece1, gridpiece2, gridpiece3) {
-     return (!gridpiece1.breaker && !gridpiece2.breaker && !gridpiece3.breaker)
- }
-
-
- function markfordeletion(color, gridpiece, grid) {
-
-     //Recursivley marks all blocks that are effected by the breaker as visited
-     if (typeof gridpiece == 'undefined' || gridpiece.xcoordinate == -1 || gridpiece.visited == true)
-         return null;
-
-     if (gridpiece.color == color) {
-         if(AiMoveEvaluation) console.log("AI Visited")
-         gridpiece.visited = true;
-
-         switch (gridpiece.image) {
-             case preloadedImages["green"]:
-             case preloadedImages["red"]:
-             case preloadedImages["blue"]:
-             case preloadedImages["yellow"]:
-             case preloadedImages["greenbreaker"]:
-             case preloadedImages["redbreaker"]:
-             case preloadedImages["yellowbreaker"]:
-             case preloadedImages["bluebreaker"]:
-                 brokengems = brokengems + 1;
-                 break;
-
-             case preloadedImages["redsquared"]:
-                 redsquared = redsquared + 1;
-                 break;
-             case preloadedImages["bluesquared"]:
-                 bluesquared = bluesquared + 1;
-                 break;
-             case preloadedImages["yellowsquared"]:
-                 yellowsquared = yellowsquared + 1;
-                 break;
-             case preloadedImages["greensquared"]:
-                 greensquared = greensquared + 1;
-                 break;
-
-         }
-         //console.log(gridpiece+" deleted");
-         gridpiece.occupied = false;
-         gridpiece.color = "none";
-         gridpiece.blocked = false;
-         gridpiece.breaker = false;
-         gridpiece.image = preloadedImages["empty"];
-
-         curGridNumber = findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate);
-
-         if ((curGridNumber - 5) % 6 != 0) {
-             markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) + 1], grid);
-         }
-         if (curGridNumber % 6 != 0) {
-             markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) - 1], grid);
-         }
-         if (curGridNumber > 5) {
-             markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) - 6], grid);
-         }
-         if (curGridNumber < 54) {
-             markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) + 6], grid);
-         }
-     }
- }
-
- function markfordeletionhelper(grid) {
-     for (var i = 0; i < grid.length; i++) {
-         var gridpiece = grid[i];
-         if (grid[i].breaker) {
-
-             switch (grid[i].image) {
-
-                 case "greenbreaker.png":
-                     deletecolor = "green";
-                     break;
-                 case "redbreaker.png":
-                     deletecolor = "red";
-                     break;
-                 case "bluebreaker.png":
-                     deletecolor = "blue";
-                     break;
-                 case "yellowbreaker.png":
-                     deletecolor = "yellow"
-                     break;
-             }
-
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate + IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate - IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate + IMAGEWIDTH, grid), grid);
-             markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate - IMAGEWIDTH, grid), grid);
-
-         }
-     }
-     if(!AiMoveEvaluation) {
-     console.log("reset");
-     resetVisited(grid);
-    }   
-  
- }
-
- function needsAnimation(grid) {
-     for (var e = 0; e < grid.length; e++) {
-         if (grid[e].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[e].xcoordinate, grid[e].ycoordinate, grid).color != "none" && findGrid(grid[e].xcoordinate, grid[e].ycoordinate + IMAGEWIDTH, grid).color == "none") {
-             return true;
-         }
-     }
-     return false;
- }
-
- function resetVisited(grid) {
-     for (var j = 0; j < grid.length; j++) {
-         grid[j].visited = false;
-     }
- }
-
- function drawPlayerPiece(playerpiece) {
-     if (!delay || onepieceanimate) {
-         newimage = document.createElement('img');
-         newimage.src = playerpiece.image1;
-         newimage.style.position = "absolute ";
-         newimage.style.left = playerpiece.xcoordinate1 + "px ";
-         newimage.style.top = playerpiece.ycoordinate1 + "px ";
-         newimage.width = IMAGEWIDTH;
-         playerElements.appendChild(newimage);
-         newimage = document.createElement('img');
-         newimage.src = playerpiece.image2;
-         newimage.style.position = "absolute ";
-         newimage.style.left = playerpiece.xcoordinate2 + "px ";
-         newimage.style.top = playerpiece.ycoordinate2 + "px ";
-         newimage.width = IMAGEWIDTH;
-         playerElements.appendChild(newimage);
-     }
- }
-
- function drawNonPlayerPieces(grid, otherGrid) {
-     console.log("lol")
-     oldDisplay = document.getElementById('display');
-     scoreDisplay = document.createElement('h1');
-     scoreDisplay.id = "display";
-     scoreDisplay.innerHTML = "Score:" + score;
-     scoreDisplay.style.position = "absolute ";
-     scoreDisplay.style.left = LEFTMOST;
-     scoreDisplay.style.top = MAXHEIGHT - IMAGEWIDTH * 10;
-     playerElements.appendChild(scoreDisplay);
-
-     if (otherGrid == true) {
-         toAppendTo = opponentElements
-     } else {
-         toAppendTo = playerElements;
-     }
-     for (var d = 0; d < grid.length; d++) {
-         newimage = document.createElement('img');
-         newimage.src = grid[d].image;
-         newimage.style.position = "absolute ";
-         newimage.style.left = grid[d].xcoordinate + "px ";
-         newimage.style.top = grid[d].ycoordinate + "px ";
-         newimage.width = IMAGEWIDTH;
-         toAppendTo.appendChild(newimage);
-
-     }
-     if (grid[2].occupied == true) {
-         newimage = document.createElement('img');
-         newimage.src = grid[2].image;
-         newimage.style.position = "absolute ";
-         newimage.style.left = grid[2].xcoordinate + "px ";
-         newimage.style.top = grid[2].ycoordinate + "px ";
-         newimage.width = IMAGEWIDTH;
-         toAppendTo.appendChild(newimage);
-     }
- }
-
- function drawOpponent(grid, playerpiece, windowWidth, windowHeight) {
-     widthdifference = window.parent.innerWidth / windowWidth;
-     adjustedwidth = widthdifference * windowWidth;
-     oldLeftMost = generateLeftMost(windowWidth);
-     oldOtherLeftMost = generateOtherLeftMost(windowWidth);
-     newLeftMost = generateLeftMost(adjustedwidth);
-     otherNewLeftMost = generateOtherLeftMost(adjustedwidth);
-
- 
-        
-    
-     for (var d = 0; d < grid.length; d++) {
-         newimage = document.createElement('img');
-         newimage.src = grid[d].image;
-         newimage.style.position = "absolute ";
-         newimage.style.left = grid[d].xcoordinate - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
-         newimage.style.top = grid[d].ycoordinate + "px ";
-         newimage.width = IMAGEWIDTH;
-         opponentElements.appendChild(newimage);
-     }
-
-     newimage = document.createElement('img');
-     newimage.src = playerpiece.image1;
-     newimage.style.position = "absolute ";
-     newimage.style.left = playerpiece.xcoordinate1 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
-     newimage.style.top = playerpiece.ycoordinate1 + "px ";
-     newimage.width = IMAGEWIDTH;
-     opponentElements.appendChild(newimage);
-
-     newimage = document.createElement('img');
-     newimage.src = playerpiece.image2;
-     newimage.style.position = "absolute ";
-     newimage.style.left = playerpiece.xcoordinate2 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
-     newimage.style.top = playerpiece.ycoordinate2 + "px ";
-     newimage.width = IMAGEWIDTH;
-     opponentElements.appendChild(newimage);
-
- }
-
- function generateLeftMost(windowWidth) {
-   LeftMost = windowWidth / 4;
-   return Math.floor(LeftMost);
- }
-
- function generateOtherLeftMost(windowWidth) {
-    LeftMost = windowWidth / 4;
-    rightMost = LeftMost + IMAGEWIDTH * 6;
-    return Math.floor(rightMost + DISTANCEBETWEEN);
-
- }
-
- function updateScore() {
-     if (!needsAnimation(grid)) {
-         tobeadded = 0;
-         tobeadded = tobeadded + brokengems * pointsPerBlock;
-         tobeadded = tobeadded + ((redsquared * pointsPerBlock) * ((redsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         tobeadded = tobeadded + ((bluesquared * pointsPerBlock) * ((bluesquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         tobeadded = tobeadded + ((yellowsquared * pointsPerBlock) * ((yellowsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         tobeadded = tobeadded + ((greensquared * pointsPerBlock) * ((greensquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
-         score = score + tobeadded;
-         brokengems = 0;
-         redsquared = 0;
-         bluesquared = 0;
-         yellowsquared = 0;
-         greensquared = 0;
-
-         startColumn = 0;
-         /* After getting points you send over blocks to opponent using the addBlock method if the game is already over from 
-            gameover position being occupied (grid[2] occupied) by the previous update stop as well  */
-         while (enemypoints > 0 && grid[2].occupied == false) {
-             if (startColumn == 6)
-                 startColumn = 0;
-             // If column was already full don't subtract from the tobeadded points, use it for another column
-             addedBlock = addBlock(startColumn);
-             startColumn++;
-             if (addedBlock == true)
-                 enemypoints = enemypoints - pointsPerBlock;
-         }
-         socket.emit('CollisionResult', id, tobeadded,gameNumber);
-     }
- }
-
- function addBlock(column) {
-     alreadyAdded = false;
-     for (var i = column; i <= column + 54; i = i + 6) {
-         blockChoices = ["counterred", "counterblue", "countergreen", "counteryellow"];
-         colorChoice = blockChoices[Math.floor((Math.random() * 4))];
-
-         if (grid[i].image != "empty.png" && i < 6) {
-             break;
-         } else if (grid[i].image != "empty.png" && grid[i - 6].image == "empty.png") {
-             grid[i - 6].image = preloadedImages[colorChoice];
-             grid[i - 6].occupied = true;
-             grid[i - 6].color = colorChoice;
-             alreadyAdded = true
-             break;
-         }
-
-         if (i >= 54 && i < 60) {
-             grid[i].image = preloadedImages[colorChoice];
-             grid[i].occupied = true;
-             grid[i].color = colorChoice;
-             alreadyAdded = true;
-             break;
-         }
-     }
-  //   drawNonPlayerPieces(grid, false);
-  //   drawPlayerPiece(playerpiece);
-     return alreadyAdded;
- }
-
- function updateEnemyBlocks(grid) {
-
-     for (var i = 0; i < grid.length; i++) {
-
-         switch (grid[i].image) {
-
-             case "counterred.png":
-                 grid[i].image = preloadedImages["counterred4"];
-                 break;
-             case "counterred4.png":
-                 grid[i].image = preloadedImages["counterred3"];
-                 break;
-             case "counterred3.png":
-                 grid[i].image = preloadedImages["counterred2"];
-                 break;
-             case "counterred2.png":
-                 grid[i].image = preloadedImages["counterred1"];
-                 break;
-
-             case "counterred1.png":
-                 grid[i].color = "red";
-                 grid[i].image = preloadedImages["red"];
-                 break;
-
-             case "counterblue.png":
-                 grid[i].image = preloadedImages["counterblue4"];
-                 break;
-             case "counterblue4.png":
-                 grid[i].image = preloadedImages["counterblue3"];
-                 break;
-             case "counterblue3.png":
-                 grid[i].image = preloadedImages["counterblue2"];
-                 break;
-             case "counterblue2.png":
-                 grid[i].image = preloadedImages["counterblue1"];
-                 break;
-
-             case "counterblue1.png":
-                 grid[i].color = "blue";
-                 grid[i].image = preloadedImages["blue"];
-                 break;
-
-             case "counteryellow.png":
-                 grid[i].image = preloadedImages["counteryellow4"];
-                 break;
-             case "counteryellow4.png":
-                 grid[i].image = preloadedImages["counteryellow3"];
-                 break;
-             case "counteryellow3.png":
-                 grid[i].image = preloadedImages["counteryellow2"];
-                 break;
-             case "counteryellow2.png":
-                 grid[i].image = preloadedImages["counteryellow1"];
-                 break;
-
-             case "counteryellow1.png":
-                 grid[i].color = "yellow";
-                 grid[i].image = preloadedImages["yellow"];
-                 break;
-
-             case "countergreen.png":
-                 grid[i].image = preloadedImages["countergreen4"];
-                 break;
-             case "countergreen4.png":
-                 grid[i].image = preloadedImages["countergreen3"];
-                 break;
-             case "countergreen3.png":
-                 grid[i].image = preloadedImages["countergreen2"];
-                 break;
-             case "countergreen2.png":
-                 grid[i].image = preloadedImages["countergreen1"];
-                 break;
-
-             case "countergreen1.png":
-                 grid[i].color = "green";
-                 grid[i].image = preloadedImages["green"];
-                 break;
-
-         }
-
-     }
-
-     for (var r = 0; r < grid.length; r++) {
-         squareCreator(grid[r]);
-     }
- }
-
- function contains(array, obj) {
-     for (var i = 0; i < array.length; i++) {
-         if (array[i] === obj) {
-             return true;
-         }
-     }
-     return false;
- }
-
- function clearIntervals() {
-     while (intervals.length > 0) {
-         clearInterval(intervals[0]);
-         intervals.shift();
-     }
- }
-
- // Functions for AI are found below
-
- function availableMoves() {
-
-     var moves = [];
-     var playerPieceOneGridNumber = findGridNumber(playerpiece.xcoordinate1, playerpiece.ycoordinate1);
-     var playerPieceTwoGridNumber = findGridNumber(playerpiece.xcoordinate2, playerpiece.ycoordinate2);
-
-     var playerPieceOneColumn = playerPieceOneGridNumber % 6;
-     var playerPieceTwoColumn = playerPieceOneGridNumber % 6;
-     // playerPieceOneGridNumber-playerPieceOneColumn = the first gridpiece in that playerpieces row.
-     var beginningOfPlayerPieceTwoRow = playerPieceTwoGridNumber - playerPieceTwoColumn;
-
-
-     // Dealing with all of the possible moves that can be created when the first playerpiece is in one of six columns
-
-     for (var i = beginningOfPlayerPieceTwoRow; i <= beginningOfPlayerPieceTwoRow + 5; i++) {
-         var currentUnoccupiedSpace = firstUnoccupiedSpaceInColumn(i,grid);
-         var playerPieceTwoDestination = currentUnoccupiedSpace;
-         // Only place this piece in that column if there's room in that column assuming piece is vertical
-         if (playerPieceTwoDestination > 5)
-         // console.log(playerPieceOneGridNumber+"playerPieceOneGridNumber");
-             moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, playerPieceTwoDestination - 6, playerPieceTwoDestination));
-         // console.log(new move(playerPieceOneGridNumber,playerPieceTwoGridNumber, playerPieceTwoDestination-6, playerPieceTwoDestination).toString());
-         if (playerPieceTwoDestination != -1) {
-
-             // if one to the left leads you to the last element in the row above you then you were on the left edge of the board
-             // other conditiion is there are no unoccupied spaces to the left
-             if ((playerPieceTwoDestination - 1) % 6 != 5 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1,grid) != -1) {
-                 var firstUnoccupiedPlaceToTheLeft = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1,grid);
-                 //     console.log(new move(playerPieceOneGridNumber,playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheLeft, playerPieceTwoDestination).toString());
-                 moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheLeft, playerPieceTwoDestination));
-
-             }
-
-             if ((playerPieceTwoDestination + 1) % 6 != 0 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1,grid) != -1) {
-                 var firstUnoccupiedPlaceToTheRight = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1,grid);
-                 //   console.log(new move(playerPieceOneGridNumber,playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheRight, playerPieceTwoDestination).toString());
-                 moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheRight, playerPieceTwoDestination));
-
-             }
-         }
-     }
-
-     return moves;
- }
-
- function firstUnoccupiedSpaceInColumn(gridNumber, grid) {
-
-     var column = gridNumber % 6;
-
-     for (var i = 54 + column; i >= 0 + column; i = i - 6) {
-
-         if (grid[i].occupied == false || i == gridNumber) {
-             //   console.log(i+"unoccupied");
-             return i;
-         }
-     }
-
-     return -1;
- }
-
- function generateKeyPresses(curMove) {
-     var keyPresses = [];
-     if (curMove.secondPostMovePosition % 6 == curMove.firstPostMovePosition % 6 && curMove.firstPostMovePosition > curMove.secondPostMovePosition) {
-         keyPresses.push(90);
-         keyPresses.push(90);
-     }
-
-     if (curMove.secondPostMovePosition % 6 > curMove.firstPostMovePosition % 6)
-         keyPresses.push(90);
-
-
-     if (curMove.secondPostMovePosition % 6 < curMove.firstPostMovePosition % 6)
-         keyPresses.push(88);
-
-    var numMovesLeft = (curMove.secondOriginalPosition % 6) - (curMove.secondPostMovePosition % 6);
-console.log(curMove.secondPostMovePosition % 6+ "result column");
-     // If numMovesLeft is negative then the absolute value of that gives us how many times to go right, you only go either left or right.
-
-console.log(numMovesLeft);
-     if (numMovesLeft < 0) {
-         var numMovesRight = Math.abs(numMovesLeft);
-         for (var i = 0; i < numMovesRight; i++) {
-             keyPresses.push(39);
-         }
-     } else if (numMovesLeft > 0) {
-         for (var i = 0; i < numMovesLeft; i++) {
-            console.log("shouldbehere");
-             keyPresses.push(37);
-         }
-     }
-
-     keyPresses.push(38);
-     return keyPresses;
-
- }
-
-
- function aiMakeMove() {
- 
-     if(otherPlayerStillPlaying){
-     var moves = this.availableMoves();
-     if(moves.length!=0){
-     AiMoveEvaluation=true;
-     console.log("evaluating moves");
-     var randomMove = chooseGreediestMove(moves);
-     
-     brokengems = 0;
-     redsquared = 0;
-     bluesquared = 0;
-     yellowsquared = 0;
-     greensquared = 0;
-     AiMoveEvaluation=false;
-     var keyPresses = generateKeyPresses(randomMove);
-
-     var evaluateKeyPresses = setInterval(
-         function() {
-
-             if (keyPresses.length != 0) {
-                 aiKeyPress(keyPresses[0]);
-                 keyPresses.shift();
-             }
-
-         }, 1000);
-    
-     }
-   }
-   
- }
-
- function aiKeyPress(keyPress) {
-
-     if (keyPress == 32) {
-         clearIntervals();
-     }
-     if (keyPress == 16) {
-         //  t = setInterval("draw()", 1000);
-     }
-     if (delay == false) {
-         if (keyPress == INSTANT && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-             if (delay == false) draw();
-         }
-         if (keyPress == SPEEDUP && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             draw();
-         }
-         if (keyPress == COUNTERCLOCK && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             rotate(COUNTERCLOCK);
-         }
-         if (keyPress == CLOCKWISE && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             rotate(CLOCKWISE);
-         }
-         if ((keyPress == RIGHT || keyPress == LEFT) && (onepieceanimate != true && animatedeletion != true) && needsAnimation != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
-             movePiece(keyPress);
-         }
-     }
-
- }
-
-function makeMove(grid,move) {
-
-playerPieceOneDestination=grid[move.firstPostMovePosition]
-playerPieceOneDestination.image=playerpiece.image1;
-playerPieceOneDestination.color=playerpiece.color1;
-playerPieceOneDestination.occupied=true;
-
-if (playerPieceOneDestination.image == "greenbreaker.png" || playerPieceOneDestination.image == "redbreaker.png" || playerPieceOneDestination.image == "bluebreaker.png" || playerPieceOneDestination.image == "yellowbreaker.png")
-
-
- playerPieceOneDestination.breaker = true;
-
-
-playerPieceTwoDestination=grid[move.secondPostMovePosition];
-playerPieceTwoDestination.image=playerpiece.image2;
-playerPieceTwoDestination.color=playerpiece.color2;
-playerPieceTwoDestination.occupied=true;
-if (playerPieceTwoDestination.image == "greenbreaker.png" || playerPieceTwoDestination.image == "redbreaker.png" || playerPieceTwoDestination.image == "bluebreaker.png" || playerPieceTwoDestination.image == "yellowbreaker.png")
-
-playerPieceTwoDestination.breaker = true;
-
-//alert(grid[move.firstPostMovePosition].color)
-return grid;
-}
-
-
-function numVisited(grid){
-var counter=0;
-    for(j=0; j<grid.length; j++){
-        if(grid[j].visited) {
-            counter++;
-        }
-    }
-    return counter;
-}
-
- function chooseGreediestMove(moves) {
-
- if(moves.length!=0) {
- 
-  var maxMove=moves[0];
-  var maxVisited=0;
-  for(i=0; i<moves.length; i++){
-    var cloned=deepCopy(grid);
-    var madeMove=makeMove(cloned,moves[i]);
-//    alert(madeMove);
-    markfordeletionhelper(madeMove);
-    var total=numVisited(madeMove)
-    if(moves[i].secondPostMovePosition % 6 ==2 || moves[i].firstPostMovePosition % 6 ==2) {
-        total=total-2;
-    }
-
-    if(total >= maxVisited) {
-        maxVisited=total;
-         
-        maxMove=moves[i];
-      }
-    }
-
-    if(maxVisited==0){
-    maxMove=moves[Math.floor((Math.random() * moves.length))];
-    }
-
-    return maxMove;
-  } 
-}
-
-    </script>
-</body>
-
+    <head>
+    </head>
+    <body style="background-color:#380B61">
+        <div id="playerElements"></div>
+        <div id="opponentElements"></div>
+        <script type="text/javascript ">
+                // controls whether or not the draw function changes the player piece's y coordinates at the start of the game this shouldn't happen if player moves along
+                socket = io.connect('http://puzzleroyalealpha.herokuapp.com/');
+                gameNumber=-1;
+                otherPlayerStillPlaying=true;
+                id = socket.sessionid;
+                situational = true;
+                delay = false;
+                onepieceanimate = false;
+                animatedeletion = false;
+                deletearray = [];
+                playerElements = document.getElementById("playerElements");
+                opponentElements = document.getElementById("opponentElements");
+                score = 0;
+                brokengems = 0;
+                bluesquared = 0;
+                redsquared = 0;
+                greensquared = 0;
+                yellowsquared = 0;
+                enemypoints = 0;
+                enemyTickingBlockImages = ["counterred2.png", "counterred3.png", "counterred1.png", "counterred4.png", "counterred.png", "counterblue2.png", "counterblue3.png", "counterblue1.png", "counterblue4.png", "counterblue.png", "countergreen2.png", "countergreen3.png", "countergreen1.png", "countergreen4.png", "countergreen.png", "co/8unteryellow2.png", "counteryellow3.png", "counteryellow1.png", "counteryellow4.png", "counteryellow.png"];
+                AiMoveEvaluation=false;
+                pointsPerBlock = 40;
+                intervals = [];
+                //Insures that even if speeding up there is a delay before the next piece falls.
+                //Key values
+                IMAGEWIDTH = Math.floor((window.parent.innerWidth / 2.7) / 10.2);
+                LEFT = 37;
+                RIGHT = 39;
+                COUNTERCLOCK = 90;
+                CLOCKWISE = 88;
+                SPEEDUP = 40;
+                INSTANT = 38;
+                DISTANCEBETWEEN = window.parent.innerWidth / 8;
+                LEFTMOST = generateLeftMost(window.parent.innerWidth);
+                RIGHTMOST =LEFTMOST + IMAGEWIDTH * 5;
+                otherLeftMost = generateOtherLeftMost(window.parent.innerWidth);
+                MAXHEIGHT = IMAGEWIDTH * 9 + IMAGEWIDTH * 3.5;
+                ADDITONALSBLOCKSSMULTIPLIER = 2;
+                socket.on('connect', function() {
+                    id = this.socket.sessionid;
+                });
+                socket.on('matched', function(number) {
+                    gameNumber = parseInt(number);
+                    grid = [];
+                    initialize();
+                });
+                socket.on('gameOver', function() {
+                    otherPlayerStillPlaying=false;
+                    clearIntervals();
+                    
+                });
+                socket.on('updateOtherPlayer', function(grid, playerpiece, windowWidth, windowHeight) {
+                    //drawOpponent(grid, playerpiece, windowWidth, windowHeight);
+                });
+                socket.on('registerCollisionResult', function(totalpoints) {
+                    enemypoints = enemypoints + totalpoints;
+                });
+                function deepCopy(obj) {
+                    if (Object.prototype.toString.call(obj) === '[object Array]') {
+                        var out = [], i = 0, len = obj.length;
+                        for ( ; i < len; i++ ) {
+                            out[i] = arguments.callee(obj[i]);
+                        }
+                        return out;
+                    }
+                    if (typeof obj === 'object') {
+                        var out = {}, i;
+                        for ( i in obj ) {
+                            out[i] = arguments.callee(obj[i]);
+                        }
+                        return out;
+                    }
+                    return obj;
+                }
+                // dictates how fast the piece drops increases if down key is pressed
+                //coordinates
+                function sendUpdateToSocket() {
+                    socket.emit('playerMove', id, grid, playerpiece,gameNumber);
+                }
+                function holdImg(e) {
+                        derp.innerHTML = "" + e.clientX + "px ";
+                        herp.innerHTML = "" + e.clientY + "px ";
+                    }
+                    //block object
+                function block(x, y, picture) {
+                    this.occupied = false;
+                    this.color = "none";
+                    this.xcoordinate = x;
+                    this.ycoordinate = y;
+                    this.image = picture;
+                    this.blocked = false;
+                    this.visited = false;
+                    this.breaker = false;
+                }
+                block.prototype.toString = function blockToString() {
+                    return this.xcoordinate + " " + this.ycoordinate + " " + this.color + " " + this.breaker;
+                }
+                function move(firstOriginalPosition, secondOriginalPosition, firstPostMovePosition, secondPostMovePosition) {
+                    this.firstOriginalPosition = firstOriginalPosition;
+                    this.secondOriginalPosition = secondOriginalPosition;
+                    this.firstPostMovePosition = firstPostMovePosition;
+                    this.secondPostMovePosition = secondPostMovePosition;
+                }
+                move.prototype.toString = function() {
+                    return this.firstOriginalPosition + " " + this.secondOriginalPosition + " " + this.firstPostMovePosition + " " + this.secondPostMovePosition;
+                }
+                function playerpiece(color1, color2, image1, image2) {
+                        this.color1 = color1;
+                        this.color2 = color2;
+                        this.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
+                        this.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
+                        this.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
+                        this.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
+                        this.image1 = image1;
+                        this.image2 = image2;
+                        this.case = 1;
+                    }
+                    // initialize grid
+                function initialize() {
+                    // preload images
+                    preloadedImages = {
+                        "empty": new Image().src = "empty.png",
+                        "blue": new Image().src = "blue.png",
+                        "yellowsquared": new Image().src = "yellowsquared.png",
+                        "yellowbreaker": new Image().src = "yellowbreaker.png",
+                        "yellow": new Image().src = "yellow.png",
+                        "redsquared": new Image().src = "redsquared.png",
+                        "red": new Image().src = "red.png",
+                        "redbreaker": new Image().src = "redbreaker.png",
+                        "greensquared": new Image().src = "greensquared.png",
+                        "green": new Image().src = "green.png",
+                        "greenbreaker": new Image().src = "greenbreaker.png",
+                        "greengreen": new Image().src = "greengreen.png",
+                        "bluebreaker": new Image().src = "bluebreaker.png",
+                        "bluesquared": new Image().src = "bluesquared.png",
+                        "counterred": new Image().src = "counterred.png",
+                        "counterred4": new Image().src = "counterred4.png",
+                        "counterred3": new Image().src = "counterred3.png",
+                        "counterred2": new Image().src = "counterred2.png",
+                        "counterred1": new Image().src = "counterred1.png",
+                        "counterblue": new Image().src = "counterblue.png",
+                        "counterblue4": new Image().src = "counterblue4.png",
+                        "counterblue3": new Image().src = "counterblue3.png",
+                        "counterblue2": new Image().src = "counterblue2.png",
+                        "counterblue1": new Image().src = "counterblue1.png",
+                        "countergreen": new Image().src = "countergreen.png",
+                        "countergreen4": new Image().src = "countergreen4.png",
+                        "countergreen3": new Image().src = "countergreen3.png",
+                        "countergreen2": new Image().src = "countergreen2.png",
+                        "countergreen1": new Image().src = "countergreen1.png",
+                        "counteryellow": new Image().src = "counteryellow.png",
+                        "counteryellow4": new Image().src = "counteryellow4.png",
+                        "counteryellow3": new Image().src = "counteryellow3.png",
+                        "counteryellow2": new Image().src = "counteryellow2.png",
+                        "counteryellow1": new Image().src = "counteryellow1.png"
+                    };
+                    playerpiece = new playerpiece();
+                    for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
+                        for (var x = LEFTMOST; x <= LEFTMOST + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
+                            grid.push(new block(x, y, preloadedImages["empty"]));
+                        }
+                    }
+                    nextselection1 = Math.floor((Math.random() * 8));
+                    nextselection2 = Math.floor((Math.random() * 8));
+                    createPlayerPiece();
+                    //Initializes other player
+                    otherGrid = [];
+                    for (var y = MAXHEIGHT - IMAGEWIDTH * 9; y <= MAXHEIGHT; y = y + IMAGEWIDTH) {
+                        for (var x = otherLeftMost; x <= otherLeftMost + IMAGEWIDTH * 5; x = x + IMAGEWIDTH) {
+                            otherGrid.push(new block(x, y, preloadedImages["empty"]));
+                        }
+                    }
+                    scoreDisplay = document.createElement('h1');
+                    scoreDisplay.id = "display";
+                    playerElements.appendChild(scoreDisplay);
+                //  drawNonPlayerPieces(otherGrid, true);
+                    draw();
+                    intervals.push(setInterval(draw, 1000));
+                    j = setInterval(sendUpdateToSocket, 200);
+                    socket.emit('initialized', id, window.parent.innerWidth, window.parent.innerHeight,gameNumber);
+                }
+                function newDeleteArray() {
+                    newarray = new Array();
+                    for (var j = 0; j < grid.length; j++) {
+                        grid[j].visited = false;
+                        if (grid[j].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[j].xcoordinate, grid[j].ycoordinate, grid).color != "none" && findGrid(grid[j].xcoordinate, grid[j].ycoordinate + IMAGEWIDTH, grid).color == "none") {
+                            animatedeletion = true;
+                            playerpiece.ycoordinate1 = -20000;
+                            playerpiece.ycoordinate2 = -20000;
+                            column = new Array();
+                            for (var z = grid[j].ycoordinate; z >= 0; z = z - IMAGEWIDTH) {
+                                if (findGrid(grid[j].xcoordinate, z, grid).color != "none") column.push(findGrid(grid[j].xcoordinate, z, grid));
+                            }
+                            newarray.push(column);
+                        }
+                    }
+                    return newarray;
+                }
+                function draw() {
+                        
+                    //   drawFuturePieces();
+                        gameover = grid[2].occupied;
+                        if(gameover && !animatedeletion){
+                            clearIntervals();
+                            socket.emit('aiLost',gameNumber);
+                        }
+                        //Checks all conditions where nothing should be done/game is over or if nothing should be animated except the pieces which need to fall after deletion
+                        if ((gameover && grid[2].image != preloadedImages["empty"] && onepieceanimate != true) || (delay && onepieceanimate != true) || animatedeletion) {
+                            if (animatedeletion) {
+                                playerpiece.ycoordinate1 = -10000;
+                                playerpiece.ycoordinate2 = -10000;
+                                for (var p = 0; p < deletearray.length; p++) {
+                                    for (var k = 0; k < deletearray[p].length; k++) {
+                                        // Piece is getting animated so we first store all of it's old information which lies in a gridpiece that will now become empty and store that old information
+                                        // in the gridpiece below(hence the +72)
+                                        oldImage = deletearray[p][k].image;
+                                        oldColor = deletearray[p][k].color;
+                                        oldBlockedStatus = deletearray[p][k].blocked;
+                                        oldBreakerStatus = deletearray[p][k].breaker;
+                                        deletearray[p][k].image = preloadedImages["empty"];
+                                        deletearray[p][k].occupied = false;
+                                        deletearray[p][k].blocked = false;
+                                        deletearray[p][k].color = "none";
+                                        deletearray[p][k].breaker = false;
+                                        findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).image = oldImage;
+                                        findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).color = oldColor;
+                                        findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).blocked = oldBlockedStatus;
+                                        findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).occupied = true;
+                                        findGrid(deletearray[p][k].xcoordinate, deletearray[p][k].ycoordinate + IMAGEWIDTH, grid).breaker = oldBreakerStatus;
+                                    }
+                                }
+                            }
+                        } else {
+                            //Since the piece has the potential to have fallen we unoccupy it's current position
+                            if (playerpiece.ycoordinate1 == MAXHEIGHT || playerpiece.ycoordinate2 == MAXHEIGHT || (isoccupied() && situational == false)) {
+                                collision(playerpiece);
+                            }
+                            /*Situational checks to see if we recently moved left or right, or if it's the start of the game, to prevent extra vertical movement.
+                                If not, we fall like usual, if this is the case the piece will fall like usual next time*/
+                            else {
+                                if (situational == false) {
+                                    playerpiece.ycoordinate1 += IMAGEWIDTH;
+                                    playerpiece.ycoordinate2 += IMAGEWIDTH;
+                                } else situational = false;
+                                            //This always happens whether or not the piece has fallen it's current location should show up as the piece so a newimage is appended to it's location
+                            }
+                        }
+                        /*Does two things, reconstructs the game board and updates the deletearray with an array of columns full of pieces that need to be animated before the game can resume after a deletion.
+                            Only updates board if there is nothing to animate.*/
+                        deletearray = newDeleteArray();
+                        if (deletearray.length == 0) {
+                            if (animatedeletion == true) {
+                                for (var r = 0; r < grid.length; r++) {
+                                    if (grid[r].occupied == true) {
+                                        if (r >= 54 || grid[r + 6].image != preloadedImages["empty"]) {
+                                            var curGridPiece = findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid)
+                                            if (!contains(enemyTickingBlockImages, curGridPiece.image)) {
+                                                squareCreator(findGrid(grid[r].xcoordinate, grid[r].ycoordinate, grid));
+                                                markfordeletionhelper(grid);
+                                                updateScore();
+                                            }
+                                        }
+                                    }
+                                }
+                                if (needsAnimation(grid)) {
+                                    deletearray = newDeleteArray();
+                                } else {
+                                    clearIntervals();
+                                    intervals.push(setInterval(draw, 1000));
+                                    animatedeletion = false;
+                                    createPlayerPiece();
+                                    draw();
+                                }
+                            }
+                        }
+                    }
+                    // Occupies the grid elements that correspond to where the current piece is located
+                function occupy(playerpiece) {
+                    for (var i = 0; i < grid.length; i++) {
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1) {
+                            grid[i].occupied = true;
+                        }
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2) {
+                            grid[i].occupied = true;
+                        }
+                    }
+                }
+                function unoccupy(playerpiece) {
+                    for (var i = 0; i < grid.length; i++) {
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1) {
+                            grid[i].occupied = false;
+                        }
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2) {
+                            grid[i].occupied = false;
+                        }
+                    }
+                }
+                function collision(playerpiece) {
+                    //Case where both squares can collide. This is when  both squares are horizontal
+                    if (playerpiece.case == 2 || playerpiece.case == 4) {
+                        squareonecollide = false;
+                        squaretwocollide = false;
+                        bothcollided = false;
+                        for (var i = 0; i < grid.length; i++) {
+                            if ((grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate1 == MAXHEIGHT) {
+                                squareonecollide = true;
+                            }
+                            if ((grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) || playerpiece.ycoordinate2 == MAXHEIGHT) {
+                                squaretwocollide = true;;
+                            }
+                        }
+                        /*If onecollides we animate one of them create, make square, check to see if anything needs to be deleted  and update the grid
+                            When only one piece collides delay is set to true and the other piece floats down user can't move because delay is false
+                            only turns true when (again) */
+                        if (squareonecollide == true && squaretwocollide == true) bothcollided = true;
+                        if (playerpiece.xcoordinate1 == -10000 || playerpiece.xcoordinate2 == -10000) bothcollided = true;
+                        if (bothcollided == false) {
+                            if (squareonecollide == true) {
+                                gridpiece = findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid);
+                                gridpiece.occupied = true;
+                                gridpiece.image = playerpiece.image1;
+                                if (gridpiece.image == "greenbreaker.png" || gridpiece.image == "redbreaker.png" || gridpiece.image == "bluebreaker.png" || gridpiece.image == "yellowbreaker.png")
+                                    gridpiece.breaker = true;
+                                gridpiece.color = playerpiece.color1;
+                                squareCreator(findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid));
+                                squareCreator(findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid));
+                                markfordeletionhelper(grid);
+                                updateScore();
+                                playerpiece.xcoordinate1 = -10000;
+                                playerpiece.ycoordinate1 = -10000;
+                                onepieceanimate = true;
+                                delay = true;
+                                draw();
+                                clearIntervals();
+                                intervals.push(setInterval(draw, 250));
+                                        //         drawNonPlayerPieces(grid, false);
+                                return;
+                            } else {
+                                gridpiece = findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid);
+                                gridpiece.occupied = true;
+                                gridpiece.image = playerpiece.image2;
+                                if (gridpiece.image == "greenbreaker.png" || gridpiece.image == "redbreaker.png" || gridpiece.image == "bluebreaker.png" || gridpiece.image == "yellowbreaker.png")
+                                    gridpiece.breaker = true;
+                                gridpiece.color = playerpiece.color2;
+                                squareCreator(findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid));
+                                squareCreator(findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid));
+                                markfordeletionhelper(grid);
+                                updateScore();
+                                playerpiece.xcoordinate2 = -10000;
+                                playerpiece.ycoordinate2 = -10000;
+                                onepieceanimate = true;
+                                delay = true;
+                                clearIntervals();
+                                intervals.push(setInterval(draw, 250));
+                                draw();
+                                return;
+                            }
+                        }
+                    }
+                    //If both collided we update the grid delete if needed and create our squares
+                    onepieceanimate = false;
+                    for (var i = 0; i < grid.length; i++) {
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1) {
+                            grid[i].occupied = true;
+                            grid[i].image = playerpiece.image1;
+                            if (grid[i].image == "greenbreaker.png" || grid[i].image == "redbreaker.png" || grid[i].image == "bluebreaker.png" || grid[i].image == "yellowbreaker.png")
+                                grid[i].breaker = true;
+                            grid[i].color = playerpiece.color1;
+                        }
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2) {
+                            grid[i].occupied = true;
+                            grid[i].image = playerpiece.image2;
+                            if (grid[i].image == "greenbreaker.png" || grid[i].image == "redbreaker.png" || grid[i].image == "bluebreaker.png" || grid[i].image == "yellowbreaker.png")
+                                grid[i].breaker = true;
+                            grid[i].color = playerpiece.color2;
+                        }
+                    }
+                    updateEnemyBlocks(grid);
+                    squareCreator(findGrid(playerpiece.xcoordinate1, playerpiece.ycoordinate1, grid));
+                    squareCreator(findGrid(playerpiece.xcoordinate2, playerpiece.ycoordinate2, grid));
+                    delay = true;
+                    markfordeletionhelper(grid);
+                    updateScore();
+                    clearIntervals();
+                    if (needsAnimation(grid)) {
+                        intervals.push(setInterval(draw, 600));
+                    } else {
+                        intervals.push(setInterval(draw, 1000));
+                    }
+                    s = setInterval("resetDelay()", 350);
+                }
+                function isoccupied() {
+                    for (var i = 0; i < grid.length; i++) {
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate1 && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH && grid[i].occupied == true) {
+                            return true;
+                        }
+                        if (grid[i].xcoordinate == playerpiece.xcoordinate2 && grid[i].ycoordinate == playerpiece.ycoordinate2 + IMAGEWIDTH && grid[i].occupied == true) {
+                            1
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                function isoccupiedkeypress(direction) {
+                    if (direction == RIGHT) {
+                        if (playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.xcoordinate2 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5) return true;
+                        if (playerpiece.case == 1 || playerpiece.case == 3) {
+                            for (var i = 0; i < grid.length; i++) {
+                                if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
+                                    return true;
+                                }
+                                if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                                    return true;
+                                }
+                            }
+                        } else {
+                            if (playerpiece.case == 4) {
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate2 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            if (playerpiece.case == 2) {
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (direction == LEFT) {
+                        if (playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.xcoordinate2 - IMAGEWIDTH < LEFTMOST) return true;
+                        if (playerpiece.case == 1 || playerpiece.case == 3) {
+                            for (var i = 0; i < grid.length; i++) {
+                                if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 && grid[i].occupied == true) {
+                                    return true;
+                                }
+                                if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                                    return true;
+                                }
+                            }
+                        } else {
+                            if (playerpiece.case == 2) {
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate2 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            if (playerpiece.case == 4) {
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH  && grid[i].ycoordinate == playerpiece.ycoordinate2 && grid[i].occupied == true) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        return false;
+                    }
+                }
+                function evaluateKeyPress(e) {
+                    key = e.which;
+                    e.preventDefault();
+                    if (key == 32) {
+                        clearIntervals();
+                    }
+                    if (key == 16) {
+                        //   t = setInterval("draw()", 1000);
+                    }
+                    if (delay == false) {
+                        if (key == INSTANT && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                        }
+                        if (key == SPEEDUP && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            draw();
+                        }
+                        if (key == COUNTERCLOCK && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            rotate(COUNTERCLOCK);
+                        }
+                        if (key == CLOCKWISE && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            rotate(CLOCKWISE);
+                        }
+                        if ((key == RIGHT || key == LEFT) && (onepieceanimate != true && animatedeletion != true) && needsAnimation != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            movePiece(key);
+                        }
+                    }
+                }
+                function movePiece(direction) {
+                    gameover = grid[2].occupied;
+                    if (gameover && grid[2].image != preloadedImages["empty"]) {
+                    } else {
+                        if (direction == LEFT && !isoccupiedkeypress(direction) && delay == false) {
+                            unoccupy(playerpiece);
+                            playerpiece.xcoordinate1 -= IMAGEWIDTH;
+                            playerpiece.xcoordinate2 -= IMAGEWIDTH;
+                            situational = true;
+                            draw();
+                        }
+                        if (direction == RIGHT && !isoccupiedkeypress(direction) && delay == false) {
+                            unoccupy(playerpiece);
+                            playerpiece.xcoordinate1 += IMAGEWIDTH;
+                            playerpiece.xcoordinate2 += IMAGEWIDTH;
+                            situational = true;
+                            draw();
+                        }
+                    }
+                }
+                function createPlayerPiece() {
+                    imgarray = [preloadedImages["green"], preloadedImages["red"], preloadedImages["blue"], preloadedImages["yellow"], preloadedImages["greenbreaker"], preloadedImages["redbreaker"],
+                        preloadedImages["yellowbreaker"], preloadedImages["bluebreaker"]
+                    ];
+                    colorarray = ["green", "red", "blue", "yellow", "green", "red", "yellow", "blue"];
+                    firstplayerpiece = nextselection1;
+                    secondplayerpiece = nextselection2;
+                    nextselection1 = Math.floor((Math.random() * 8));
+                    nextselection2 = Math.floor((Math.random() * 8));
+                    // drawFuturePieces();
+                    playerpiece.xcoordinate1 = LEFTMOST + IMAGEWIDTH * 2;
+                    playerpiece.xcoordinate2 = LEFTMOST + IMAGEWIDTH * 2;
+                    playerpiece.ycoordinate1 = MAXHEIGHT - IMAGEWIDTH * 9;
+                    playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 8;
+                    playerpiece.image1 = imgarray[firstplayerpiece];
+                    playerpiece.color1 = colorarray[firstplayerpiece];
+                    playerpiece.image2 = imgarray[secondplayerpiece];
+                    playerpiece.color2 = colorarray[secondplayerpiece];
+                    playerpiece.case = 1;
+                    situational = true;
+                    if (grid[8].occupied == true) {
+                        playerpiece.xcoordinate2 = LEFTMOST+ IMAGEWIDTH * 3;
+                        playerpiece.ycoordinate2 = MAXHEIGHT - IMAGEWIDTH * 9;
+                    }
+                        aiMakeMove();
+                    
+                }
+                function rotate(direction) {
+                    if (gameover == false) {
+                        position = playerpiece.
+                        case;
+                        if (direction == COUNTERCLOCK && !isoccupiedrotate(direction)) {
+                            unoccupy(playerpiece);
+                            situational = true;
+                            switch (position) {
+                                case 1:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
+                                    playerpiece.case = 4;
+                                    draw();
+                                    break;
+                                case 2:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
+                                    playerpiece.case = 1;
+                                    draw();
+                                    break;
+                                case 3:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
+                                    playerpiece.case = 2;
+                                    draw();
+                                    break;
+                                case 4:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
+                                    playerpiece.case = 3;
+                                    draw();
+                                    break;
+                            }
+                        }
+                        if (direction == CLOCKWISE && !isoccupiedrotate(direction)) {
+                            unoccupy(playerpiece);
+                            situational = true;
+                            switch (position) {
+                                case 1:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
+                                    playerpiece.
+                                    case = 2;
+                                    draw();
+                                    break;
+                                case 2:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 + IMAGEWIDTH;
+                                    playerpiece.
+                                    case = 3;
+                                    draw();
+                                    break;
+                                case 3:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 - IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
+                                    playerpiece.
+                                    case = 4;
+                                    draw();
+                                    break;
+                                case 4:
+                                    playerpiece.xcoordinate1 = playerpiece.xcoordinate1 + IMAGEWIDTH;
+                                    playerpiece.ycoordinate1 = playerpiece.ycoordinate1 - IMAGEWIDTH;
+                                    playerpiece.
+                                    case = 1;
+                                    draw();
+                                    break;
+                            }
+                        }
+                    }
+                }
+                function isoccupiedrotate(direction) {
+                    position = playerpiece.case;
+                    if (direction == COUNTERCLOCK) {
+                        switch (position) {
+                            case 1:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                            case 2:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                            case 3:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                            case 4:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                    if (direction == CLOCKWISE) {
+                        switch (position) {
+                            case 1:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                            case 2:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 + IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 + IMAGEWIDTH > MAXHEIGHT) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                            case 3:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 - IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH &&
+                                        grid[i].occupied == true || playerpiece.xcoordinate1 - IMAGEWIDTH < LEFTMOST || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                            case 4:
+                                for (var i = 0; i < grid.length; i++) {
+                                    if (grid[i].xcoordinate == playerpiece.xcoordinate1 + IMAGEWIDTH && grid[i].ycoordinate == playerpiece.ycoordinate1 - IMAGEWIDTH && grid[i].occupied == true || playerpiece.xcoordinate1 + IMAGEWIDTH > LEFTMOST + IMAGEWIDTH * 5 || playerpiece.ycoordinate1 - IMAGEWIDTH < 0) {
+                                        return true;
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                    return false;
+                }
+                function resetDelay() {
+                    delay = false;
+                    clearInterval(s);
+                    if (playerpiece.xcoordinate1 == -10000 || playerpiece.xcoordinate2 == -10000) {
+                    }
+                    if (animatedeletion == false) {
+                        createPlayerPiece();
+                    }
+                }
+                function findGrid(xcoordinate, ycoordinate, grid) {
+                    for (var i = 0; i < grid.length; i++) {
+                        if (grid[i].xcoordinate == xcoordinate && grid[i].ycoordinate == ycoordinate) {
+                            return grid[i];
+                        }
+                    }
+                    return new block(-1, -1, "blah.png");
+                }
+                function findGridNumber(xcoordinate, ycoordinate) {
+                    for (var i = 0; i < grid.length; i++) {
+                        if (grid[i].xcoordinate == xcoordinate && grid[i].ycoordinate == ycoordinate) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+                function squareCreator(gridpiece) {
+                    xcoordinate = gridpiece.xcoordinate;
+                    ycoordinate = gridpiece.ycoordinate;
+                    originalSquare = findGrid(xcoordinate, ycoordinate, grid);
+                    topSquare = findGrid(xcoordinate, ycoordinate + IMAGEWIDTH, grid);
+                    rightSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate, grid);
+                    bottomSquare = findGrid(xcoordinate, ycoordinate - IMAGEWIDTH, grid);
+                    rightBottomSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
+                    rightTopSquare = findGrid(xcoordinate + IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
+                    leftSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate, grid);
+                    leftTopSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate + IMAGEWIDTH, grid);
+                    leftBottomSquare = findGrid(xcoordinate - IMAGEWIDTH, ycoordinate - IMAGEWIDTH, grid);
+                    if (gridpiece.breaker == false) {
+                        if (noneAreBreakers(rightSquare, bottomSquare, rightBottomSquare) && (rightSquare.color == gridpiece.color) && bottomSquare.color == gridpiece.color &&
+                            rightBottomSquare.color == gridpiece.color) {
+                            if (gridpiece.color == "green") {
+                                rightSquare.blocked = true;
+                                rightBottomSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                rightSquare.image = preloadedImages["greensquared"];
+                                rightBottomSquare.image = preloadedImages["greensquared"];
+                                bottomSquare.image = preloadedImages["greensquared"];
+                                originalSquare.image = preloadedImages["greensquared"];
+                            }
+                            if (gridpiece.color == "blue") {
+                                rightSquare.blocked = true;
+                                rightBottomSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                rightSquare.image = preloadedImages["bluesquared"];
+                                rightBottomSquare.image = preloadedImages["bluesquared"];
+                                bottomSquare.image = preloadedImages["bluesquared"];
+                                originalSquare.image = preloadedImages["bluesquared"];
+                            }
+                            if (gridpiece.color == "red") {
+                                rightSquare.blocked = true;
+                                rightBottomSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                rightSquare.image = preloadedImages["redsquared"];
+                                rightBottomSquare.image = preloadedImages["redsquared"];
+                                bottomSquare.image = preloadedImages["redsquared"];
+                                originalSquare.image = preloadedImages["redsquared"];
+                            }
+                            if (gridpiece.color == "yellow") {
+                                rightSquare.blocked = true;
+                                rightBottomSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                rightSquare.image = preloadedImages["yellowsquared"];
+                                rightBottomSquare.image = preloadedImages["yellowsquared"];
+                                bottomSquare.image = preloadedImages["yellowsquared"];
+                                originalSquare.image = preloadedImages["yellowsquared"];
+                            }
+                        }
+                        if (noneAreBreakers(rightSquare, topSquare, rightTopSquare) && (rightSquare.color == gridpiece.color) && topSquare.color == gridpiece.color &&
+                            rightTopSquare.color == gridpiece.color) {
+                            if (gridpiece.color == "green") {
+                                originalSquare.blocked = true;
+                                rightSquare.blocked = true;
+                                topSquare.blocked = true;
+                                rightTopSquare.blocked = true;
+                                originalSquare.image = preloadedImages["greensquared"];
+                                rightSquare.image = preloadedImages["greensquared"];
+                                topSquare.image = preloadedImages["greensquared"];
+                                rightTopSquare.image = preloadedImages["greensquared"];
+                            }
+                            if (gridpiece.color == "blue") {
+                                originalSquare.blocked = true;
+                                rightSquare.blocked = true;
+                                topSquare.blocked = true;
+                                rightTopSquare.blocked = true;
+                                originalSquare.image = preloadedImages["bluesquared"];
+                                rightSquare.image = preloadedImages["bluesquared"];
+                                topSquare.image = preloadedImages["bluesquared"];
+                                rightTopSquare.image = preloadedImages["bluesquared"];
+                            }
+                            if (gridpiece.color == "red") {
+                                originalSquare.blocked = true;
+                                rightSquare.blocked = true;
+                                topSquare.blocked = true;
+                                rightTopSquare.blocked = true;
+                                originalSquare.image = preloadedImages["redsquared"];
+                                rightSquare.image = preloadedImages["redsquared"];
+                                topSquare.image = preloadedImages["redsquared"];
+                                rightTopSquare.image = preloadedImages["redsquared"];
+                            }
+                            if (gridpiece.color == "yellow") {
+                                originalSquare.blocked = true;
+                                rightSquare.blocked = true;
+                                topSquare.blocked = true;
+                                rightTopSquare.blocked = true;
+                                originalSquare.image = preloadedImages["yellowsquared"];
+                                rightSquare.image = preloadedImages["yellowsquared"];
+                                topSquare.image = preloadedImages["yellowsquared"];
+                                rightTopSquare.image = preloadedImages["yellowsquared"];
+                            }
+                        }
+                        if (noneAreBreakers(leftSquare, topSquare, leftTopSquare) && (leftSquare.color == gridpiece.color) && topSquare.color == gridpiece.color && leftTopSquare.color == gridpiece.color) {
+                            if (gridpiece.color == "green") {
+                                leftSquare.blocked = true;
+                                topSquare.blocked = true;
+                                leftTopSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftSquare.image = preloadedImages["greensquared"];
+                                topSquare.image = preloadedImages["greensquared"];
+                                leftTopSquare.image = preloadedImages["greensquared"];
+                                originalSquare.image = preloadedImages["greensquared"];
+                            }
+                            if (gridpiece.color == "red") {
+                                leftSquare.blocked = true;
+                                topSquare.blocked = true;
+                                leftTopSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftSquare.image = preloadedImages["redsquared"];
+                                topSquare.image = preloadedImages["redsquared"];
+                                leftTopSquare.image = preloadedImages["redsquared"];
+                                originalSquare.image = preloadedImages["redsquared"];
+                            }
+                            if (gridpiece.color == "blue") {
+                                leftSquare.blocked = true;
+                                topSquare.blocked = true;
+                                leftTopSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftSquare.image = preloadedImages["bluesquared"];
+                                topSquare.image = preloadedImages["bluesquared"];
+                                leftTopSquare.image = preloadedImages["bluesquared"];
+                                originalSquare.image = preloadedImages["bluesquared"];
+                            }
+                            if (gridpiece.color == "yellow") {
+                                leftSquare.blocked = true;
+                                topSquare.blocked = true;
+                                leftTopSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftSquare.image = preloadedImages["yellowsquared"];
+                                topSquare.image = preloadedImages["yellowsquared"];
+                                leftTopSquare.image = preloadedImages["yellowsquared"];
+                                originalSquare.image = preloadedImages["yellowsquared"];
+                            }
+                        }
+                        if (noneAreBreakers(leftSquare, bottomSquare, leftBottomSquare) && (leftSquare.color == gridpiece.color) && bottomSquare.color == gridpiece.color &&
+                            leftBottomSquare.color == gridpiece.color) {
+                            if (gridpiece.color == "green") {
+                                leftBottomSquare.blocked = true;
+                                leftSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftBottomSquare.image = preloadedImages["greensquared"];
+                                leftSquare.image = preloadedImages["greensquared"];
+                                bottomSquare.image = preloadedImages["greensquared"];
+                                originalSquare.image = preloadedImages["greensquared"];
+                            }
+                            if (gridpiece.color == "red") {
+                                leftBottomSquare.blocked = true;
+                                leftSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftBottomSquare.image = preloadedImages["redsquared"];
+                                leftSquare.image = preloadedImages["redsquared"];
+                                bottomSquare.image = preloadedImages["redsquared"];
+                                originalSquare.image = preloadedImages["redsquared"];
+                            }
+                            if (gridpiece.color == "blue") {
+                                leftBottomSquare.blocked = true;
+                                leftSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftBottomSquare.image = preloadedImages["bluesquared"];
+                                leftSquare.image = preloadedImages["bluesquared"];
+                                bottomSquare.image = preloadedImages["bluesquared"];
+                                originalSquare.image = preloadedImages["bluesquared"];
+                            }
+                            if (gridpiece.color == "yellow") {
+                                leftBottomSquare.blocked = true;
+                                leftSquare.blocked = true;
+                                bottomSquare.blocked = true;
+                                originalSquare.blocked = true;
+                                leftBottomSquare.image = preloadedImages["yellowsquared"];
+                                leftSquare.image = preloadedImages["yellowsquared"];
+                                bottomSquare.image = preloadedImages["yellowsquared"];
+                                originalSquare.image = preloadedImages["yellowsquared"];
+                            }
+                        }
+                    }
+                }
+                function noneAreBreakers(gridpiece1, gridpiece2, gridpiece3) {
+                    return (!gridpiece1.breaker && !gridpiece2.breaker && !gridpiece3.breaker)
+                }
+                function markfordeletion(color, gridpiece, grid) {
+                    //Recursivley marks all blocks that are effected by the breaker as visited
+                    if (typeof gridpiece == 'undefined' || gridpiece.xcoordinate == -1 || gridpiece.visited == true)
+                        return null;
+                    if (gridpiece.color == color) {
+                        gridpiece.visited = true;
+                        switch (gridpiece.image) {
+                            case preloadedImages["green"]:
+                            case preloadedImages["red"]:
+                            case preloadedImages["blue"]:
+                            case preloadedImages["yellow"]:
+                            case preloadedImages["greenbreaker"]:
+                            case preloadedImages["redbreaker"]:
+                            case preloadedImages["yellowbreaker"]:
+                            case preloadedImages["bluebreaker"]:
+                                brokengems = brokengems + 1;
+                                break;
+                            case preloadedImages["redsquared"]:
+                                redsquared = redsquared + 1;
+                                break;
+                            case preloadedImages["bluesquared"]:
+                                bluesquared = bluesquared + 1;
+                                break;
+                            case preloadedImages["yellowsquared"]:
+                                yellowsquared = yellowsquared + 1;
+                                break;
+                            case preloadedImages["greensquared"]:
+                                greensquared = greensquared + 1;
+                                break;
+                        }
+                        gridpiece.occupied = false;
+                        gridpiece.color = "none";
+                        gridpiece.blocked = false;
+                        gridpiece.breaker = false;
+                        gridpiece.image = preloadedImages["empty"];
+                        curGridNumber = findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate);
+                        if ((curGridNumber - 5) % 6 != 0) {
+                            markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) + 1], grid);
+                        }
+                        if (curGridNumber % 6 != 0) {
+                            markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) - 1], grid);
+                        }
+                        if (curGridNumber > 5) {
+                            markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) - 6], grid);
+                        }
+                        if (curGridNumber < 54) {
+                            markfordeletion(color, grid[findGridNumber(gridpiece.xcoordinate, gridpiece.ycoordinate) + 6], grid);
+                        }
+                    }
+                }
+                function markfordeletionhelper(grid) {
+                    for (var i = 0; i < grid.length; i++) {
+                        var gridpiece = grid[i];
+                        if (grid[i].breaker) {
+                            switch (grid[i].image) {
+                                case "greenbreaker.png":
+                                    deletecolor = "green";
+                                    break;
+                                case "redbreaker.png":
+                                    deletecolor = "red";
+                                    break;
+                                case "bluebreaker.png":
+                                    deletecolor = "blue";
+                                    break;
+                                case "yellowbreaker.png":
+                                    deletecolor = "yellow"
+                                    break;
+                            }
+                            markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate + IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
+                            markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate - IMAGEWIDTH, gridpiece.ycoordinate, grid), grid);
+                            markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate + IMAGEWIDTH, grid), grid);
+                            markfordeletion(deletecolor, findGrid(gridpiece.xcoordinate, gridpiece.ycoordinate - IMAGEWIDTH, grid), grid);
+                        }
+                    }
+                    if(!AiMoveEvaluation) {
+                    resetVisited(grid);
+                    }
+                }
+                function needsAnimation(grid) {
+                    for (var e = 0; e < grid.length; e++) {
+                        if (grid[e].ycoordinate + IMAGEWIDTH <= MAXHEIGHT && findGrid(grid[e].xcoordinate, grid[e].ycoordinate, grid).color != "none" && findGrid(grid[e].xcoordinate, grid[e].ycoordinate + IMAGEWIDTH, grid).color == "none") {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                function resetVisited(grid) {
+                    for (var j = 0; j < grid.length; j++) {
+                        grid[j].visited = false;
+                    }
+                }
+                function drawPlayerPiece(playerpiece) {
+                    if (!delay || onepieceanimate) {
+                        newimage = document.createElement('img');
+                        newimage.src = playerpiece.image1;
+                        newimage.style.position = "absolute ";
+                        newimage.style.left = playerpiece.xcoordinate1 + "px ";
+                        newimage.style.top = playerpiece.ycoordinate1 + "px ";
+                        newimage.width = IMAGEWIDTH;
+                        playerElements.appendChild(newimage);
+                        newimage = document.createElement('img');
+                        newimage.src = playerpiece.image2;
+                        newimage.style.position = "absolute ";
+                        newimage.style.left = playerpiece.xcoordinate2 + "px ";
+                        newimage.style.top = playerpiece.ycoordinate2 + "px ";
+                        newimage.width = IMAGEWIDTH;
+                        playerElements.appendChild(newimage);
+                    }
+                }
+                function drawNonPlayerPieces(grid, otherGrid) {
+                    oldDisplay = document.getElementById('display');
+                    scoreDisplay = document.createElement('h1');
+                    scoreDisplay.id = "display";
+                    scoreDisplay.innerHTML = "Score:" + score;
+                    scoreDisplay.style.position = "absolute ";
+                    scoreDisplay.style.left = LEFTMOST;
+                    scoreDisplay.style.top = MAXHEIGHT - IMAGEWIDTH * 10;
+                    playerElements.appendChild(scoreDisplay);
+                    if (otherGrid == true) {
+                        toAppendTo = opponentElements
+                    } else {
+                        toAppendTo = playerElements;
+                    }
+                    for (var d = 0; d < grid.length; d++) {
+                        newimage = document.createElement('img');
+                        newimage.src = grid[d].image;
+                        newimage.style.position = "absolute ";
+                        newimage.style.left = grid[d].xcoordinate + "px ";
+                        newimage.style.top = grid[d].ycoordinate + "px ";
+                        newimage.width = IMAGEWIDTH;
+                        toAppendTo.appendChild(newimage);
+                    }
+                    if (grid[2].occupied == true) {
+                        newimage = document.createElement('img');
+                        newimage.src = grid[2].image;
+                        newimage.style.position = "absolute ";
+                        newimage.style.left = grid[2].xcoordinate + "px ";
+                        newimage.style.top = grid[2].ycoordinate + "px ";
+                        newimage.width = IMAGEWIDTH;
+                        toAppendTo.appendChild(newimage);
+                    }
+                }
+                function drawOpponent(grid, playerpiece, windowWidth, windowHeight) {
+                    widthdifference = window.parent.innerWidth / windowWidth;
+                    adjustedwidth = widthdifference * windowWidth;
+                    oldLeftMost = generateLeftMost(windowWidth);
+                    oldOtherLeftMost = generateOtherLeftMost(windowWidth);
+                    newLeftMost = generateLeftMost(adjustedwidth);
+                    otherNewLeftMost = generateOtherLeftMost(adjustedwidth);
+                        
+                    
+                    for (var d = 0; d < grid.length; d++) {
+                        newimage = document.createElement('img');
+                        newimage.src = grid[d].image;
+                        newimage.style.position = "absolute ";
+                        newimage.style.left = grid[d].xcoordinate - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
+                        newimage.style.top = grid[d].ycoordinate + "px ";
+                        newimage.width = IMAGEWIDTH;
+                        opponentElements.appendChild(newimage);
+                    }
+                    newimage = document.createElement('img');
+                    newimage.src = playerpiece.image1;
+                    newimage.style.position = "absolute ";
+                    newimage.style.left = playerpiece.xcoordinate1 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
+                    newimage.style.top = playerpiece.ycoordinate1 + "px ";
+                    newimage.width = IMAGEWIDTH;
+                    opponentElements.appendChild(newimage);
+                    newimage = document.createElement('img');
+                    newimage.src = playerpiece.image2;
+                    newimage.style.position = "absolute ";
+                    newimage.style.left = playerpiece.xcoordinate2 - oldLeftMost + newLeftMost + (otherNewLeftMost - newLeftMost) + "px ";
+                    newimage.style.top = playerpiece.ycoordinate2 + "px ";
+                    newimage.width = IMAGEWIDTH;
+                    opponentElements.appendChild(newimage);
+                }
+                function generateLeftMost(windowWidth) {
+                LeftMost = windowWidth / 4;
+                return Math.floor(LeftMost);
+                }
+                function generateOtherLeftMost(windowWidth) {
+                    LeftMost = windowWidth / 4;
+                    rightMost = LeftMost + IMAGEWIDTH * 6;
+                    return Math.floor(rightMost + DISTANCEBETWEEN);
+                }
+                function updateScore() {
+                    if (!needsAnimation(grid)) {
+                        tobeadded = 0;
+                        tobeadded = tobeadded + brokengems * pointsPerBlock;
+                        tobeadded = tobeadded + ((redsquared * pointsPerBlock) * ((redsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+                        tobeadded = tobeadded + ((bluesquared * pointsPerBlock) * ((bluesquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+                        tobeadded = tobeadded + ((yellowsquared * pointsPerBlock) * ((yellowsquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+                        tobeadded = tobeadded + ((greensquared * pointsPerBlock) * ((greensquared / 4) * ADDITONALSBLOCKSSMULTIPLIER));
+                        score = score + tobeadded;
+                        brokengems = 0;
+                        redsquared = 0;
+                        bluesquared = 0;
+                        yellowsquared = 0;
+                        greensquared = 0;
+                        startColumn = 0;
+                        /* After getting points you send over blocks to opponent using the addBlock method if the game is already over from
+                            gameover position being occupied (grid[2] occupied) by the previous update stop as well  */
+                        while (enemypoints > 0 && grid[2].occupied == false) {
+                            if (startColumn == 6)
+                                startColumn = 0;
+                            // If column was already full don't subtract from the tobeadded points, use it for another column
+                            addedBlock = addBlock(startColumn);
+                            startColumn++;
+                            if (addedBlock == true)
+                                enemypoints = enemypoints - pointsPerBlock;
+                        }
+                        socket.emit('CollisionResult', id, tobeadded,gameNumber);
+                    }
+                }
+                function addBlock(column) {
+                    alreadyAdded = false;
+                    for (var i = column; i <= column + 54; i = i + 6) {
+                        blockChoices = ["counterred", "counterblue", "countergreen", "counteryellow"];
+                        colorChoice = blockChoices[Math.floor((Math.random() * 4))];
+                        if (grid[i].image != "empty.png" && i < 6) {
+                            break;
+                        } else if (grid[i].image != "empty.png" && grid[i - 6].image == "empty.png") {
+                            grid[i - 6].image = preloadedImages[colorChoice];
+                            grid[i - 6].occupied = true;
+                            grid[i - 6].color = colorChoice;
+                            alreadyAdded = true
+                            break;
+                        }
+                        if (i >= 54 && i < 60) {
+                            grid[i].image = preloadedImages[colorChoice];
+                            grid[i].occupied = true;
+                            grid[i].color = colorChoice;
+                            alreadyAdded = true;
+                            break;
+                        }
+                    }
+                    return alreadyAdded;
+                }
+                function updateEnemyBlocks(grid) {
+                    for (var i = 0; i < grid.length; i++) {
+                        switch (grid[i].image) {
+                            case "counterred.png":
+                                grid[i].image = preloadedImages["counterred4"];
+                                break;
+                            case "counterred4.png":
+                                grid[i].image = preloadedImages["counterred3"];
+                                break;
+                            case "counterred3.png":
+                                grid[i].image = preloadedImages["counterred2"];
+                                break;
+                            case "counterred2.png":
+                                grid[i].image = preloadedImages["counterred1"];
+                                break;
+                            case "counterred1.png":
+                                grid[i].color = "red";
+                                grid[i].image = preloadedImages["red"];
+                                break;
+                            case "counterblue.png":
+                                grid[i].image = preloadedImages["counterblue4"];
+                                break;
+                            case "counterblue4.png":
+                                grid[i].image = preloadedImages["counterblue3"];
+                                break;
+                            case "counterblue3.png":
+                                grid[i].image = preloadedImages["counterblue2"];
+                                break;
+                            case "counterblue2.png":
+                                grid[i].image = preloadedImages["counterblue1"];
+                                break;
+                            case "counterblue1.png":
+                                grid[i].color = "blue";
+                                grid[i].image = preloadedImages["blue"];
+                                break;
+                            case "counteryellow.png":
+                                grid[i].image = preloadedImages["counteryellow4"];
+                                break;
+                            case "counteryellow4.png":
+                                grid[i].image = preloadedImages["counteryellow3"];
+                                break;
+                            case "counteryellow3.png":
+                                grid[i].image = preloadedImages["counteryellow2"];
+                                break;
+                            case "counteryellow2.png":
+                                grid[i].image = preloadedImages["counteryellow1"];
+                                break;
+                            case "counteryellow1.png":
+                                grid[i].color = "yellow";
+                                grid[i].image = preloadedImages["yellow"];
+                                break;
+                            case "countergreen.png":
+                                grid[i].image = preloadedImages["countergreen4"];
+                                break;
+                            case "countergreen4.png":
+                                grid[i].image = preloadedImages["countergreen3"];
+                                break;
+                            case "countergreen3.png":
+                                grid[i].image = preloadedImages["countergreen2"];
+                                break;
+                            case "countergreen2.png":
+                                grid[i].image = preloadedImages["countergreen1"];
+                                break;
+                            case "countergreen1.png":
+                                grid[i].color = "green";
+                                grid[i].image = preloadedImages["green"];
+                                break;
+                        }
+                    }
+                    for (var r = 0; r < grid.length; r++) {
+                        squareCreator(grid[r]);
+                    }
+                }
+                function contains(array, obj) {
+                    for (var i = 0; i < array.length; i++) {
+                        if (array[i] === obj) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                function clearIntervals() {
+                    while (intervals.length > 0) {
+                        clearInterval(intervals[0]);
+                        intervals.shift();
+                    }
+                }
+                // Functions for AI are found below
+                function availableMoves() {
+                    var moves = [];
+                    var playerPieceOneGridNumber = findGridNumber(playerpiece.xcoordinate1, playerpiece.ycoordinate1);
+                    var playerPieceTwoGridNumber = findGridNumber(playerpiece.xcoordinate2, playerpiece.ycoordinate2);
+                    var playerPieceOneColumn = playerPieceOneGridNumber % 6;
+                    var playerPieceTwoColumn = playerPieceOneGridNumber % 6;
+                    // playerPieceOneGridNumber-playerPieceOneColumn = the first gridpiece in that playerpieces row.
+                    var beginningOfPlayerPieceTwoRow = playerPieceTwoGridNumber - playerPieceTwoColumn;
+                    // Dealing with all of the possible moves that can be created when the first playerpiece is in one of six columns
+                    for (var i = beginningOfPlayerPieceTwoRow; i <= beginningOfPlayerPieceTwoRow + 5; i++) {
+                        var currentUnoccupiedSpace = firstUnoccupiedSpaceInColumn(i,grid);
+                        var playerPieceTwoDestination = currentUnoccupiedSpace;
+                        // Only place this piece in that column if there's room in that column assuming piece is vertical
+                        if (playerPieceTwoDestination > 5)
+                            moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, playerPieceTwoDestination - 6, playerPieceTwoDestination));
+                        if (playerPieceTwoDestination != -1) {
+                            // if one to the left leads you to the last element in the row above you then you were on the left edge of the board
+                            // other conditiion is there are no unoccupied spaces to the left
+                            if ((playerPieceTwoDestination - 1) % 6 != 5 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1,grid) != -1) {
+                                var firstUnoccupiedPlaceToTheLeft = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination - 1,grid);
+                                moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheLeft, playerPieceTwoDestination));
+                            }
+                            if ((playerPieceTwoDestination + 1) % 6 != 0 && firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1,grid) != -1) {
+                                var firstUnoccupiedPlaceToTheRight = firstUnoccupiedSpaceInColumn(playerPieceTwoDestination + 1,grid);
+                                moves.push(new move(playerPieceOneGridNumber, playerPieceTwoGridNumber, firstUnoccupiedPlaceToTheRight, playerPieceTwoDestination));
+                            }
+                        }
+                    }
+                    return moves;
+                }
+                function firstUnoccupiedSpaceInColumn(gridNumber, grid) {
+                    var column = gridNumber % 6;
+                    for (var i = 54 + column; i >= 0 + column; i = i - 6) {
+                        if (grid[i].occupied == false || i == gridNumber) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+                function generateKeyPresses(curMove) {
+                    var keyPresses = [];
+                    if (curMove.secondPostMovePosition % 6 == curMove.firstPostMovePosition % 6 && curMove.firstPostMovePosition > curMove.secondPostMovePosition) {
+                        keyPresses.push(90);
+                        keyPresses.push(90);
+                    }
+                    if (curMove.secondPostMovePosition % 6 > curMove.firstPostMovePosition % 6)
+                        keyPresses.push(90);
+                    if (curMove.secondPostMovePosition % 6 < curMove.firstPostMovePosition % 6)
+                        keyPresses.push(88);
+                    var numMovesLeft = (curMove.secondOriginalPosition % 6) - (curMove.secondPostMovePosition % 6);
+                    // If numMovesLeft is negative then the absolute value of that gives us how many times to go right, you only go either left or right.
+                    if (numMovesLeft < 0) {
+                        var numMovesRight = Math.abs(numMovesLeft);
+                        for (var i = 0; i < numMovesRight; i++) {
+                            keyPresses.push(39);
+                        }
+                    } else if (numMovesLeft > 0) {
+                        for (var i = 0; i < numMovesLeft; i++) {
+                            keyPresses.push(37);
+                        }
+                    }
+                    keyPresses.push(38);
+                    return keyPresses;
+                }
+                function aiMakeMove() {
+                    if(otherPlayerStillPlaying){
+                    var moves = this.availableMoves();
+                    if(moves.length!=0){
+                    AiMoveEvaluation=true;
+                    var randomMove = chooseGreediestMove(moves);
+                    
+                    brokengems = 0;
+                    redsquared = 0;
+                    bluesquared = 0;
+                    yellowsquared = 0;
+                    greensquared = 0;
+                    AiMoveEvaluation=false;
+                    var keyPresses = generateKeyPresses(randomMove);
+                    var evaluateKeyPresses = setInterval(
+                        function() {
+                            if (keyPresses.length != 0) {
+                                aiKeyPress(keyPresses[0]);
+                                keyPresses.shift();
+                            }
+                        }, 1000);
+                    
+                    }
+                }
+                }
+                function aiKeyPress(keyPress) {
+                    if (keyPress == 32) {
+                        clearIntervals();
+                    }
+                    if (keyPress == 16) {
+                    }
+                    if (delay == false) {
+                        if (keyPress == INSTANT && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                            if (delay == false) draw();
+                        }
+                        if (keyPress == SPEEDUP && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            draw();
+                        }
+                        if (keyPress == COUNTERCLOCK && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            rotate(COUNTERCLOCK);
+                        }
+                        if (keyPress == CLOCKWISE && onepieceanimate != true && animatedeletion != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            rotate(CLOCKWISE);
+                        }
+                        if ((keyPress == RIGHT || keyPress == LEFT) && (onepieceanimate != true && animatedeletion != true) && needsAnimation != true && playerpiece.xcoordinate1 != -10001 && playerpiece.xcoordinate2 != -10001) {
+                            movePiece(keyPress);
+                        }
+                    }
+                }
+                function makeMove(grid,move) {
+                playerPieceOneDestination=grid[move.firstPostMovePosition]
+                playerPieceOneDestination.image=playerpiece.image1;
+                playerPieceOneDestination.color=playerpiece.color1;
+                playerPieceOneDestination.occupied=true;
+                if (playerPieceOneDestination.image == "greenbreaker.png" || playerPieceOneDestination.image == "redbreaker.png" || playerPieceOneDestination.image == "bluebreaker.png" || playerPieceOneDestination.image == "yellowbreaker.png")
+                playerPieceOneDestination.breaker = true;
+                playerPieceTwoDestination=grid[move.secondPostMovePosition];
+                playerPieceTwoDestination.image=playerpiece.image2;
+                playerPieceTwoDestination.color=playerpiece.color2;
+                playerPieceTwoDestination.occupied=true;
+                if (playerPieceTwoDestination.image == "greenbreaker.png" || playerPieceTwoDestination.image == "redbreaker.png" || playerPieceTwoDestination.image == "bluebreaker.png" || playerPieceTwoDestination.image == "yellowbreaker.png")
+                playerPieceTwoDestination.breaker = true;
+                //alert(grid[move.firstPostMovePosition].color)
+                return grid;
+                }
+                function numVisited(grid){
+                var counter=0;
+                    for(j=0; j<grid.length; j++){
+                        if(grid[j].visited) {
+                            counter++;
+                        }
+                    }
+                    return counter;
+                }
+                function chooseGreediestMove(moves) {
+                if(moves.length!=0) {
+                var maxMove=moves[0];
+                var maxVisited=0;
+                for(i=0; i<moves.length; i++){
+                    var cloned=deepCopy(grid);
+                    var madeMove=makeMove(cloned,moves[i]);
+                    markfordeletionhelper(madeMove);
+                    var total=numVisited(madeMove)
+                    if(moves[i].secondPostMovePosition % 6 ==2 || moves[i].firstPostMovePosition % 6 ==2) {
+                        total=total-2;
+                    }
+                    if(total >= maxVisited) {
+                        maxVisited=total;
+                        
+                        maxMove=moves[i];
+                    }
+                    }
+                    if(maxVisited==0){
+                    maxMove=moves[Math.floor((Math.random() * moves.length))];
+                    }
+                    return maxMove;
+                }
+            }
+        </script>
+    </body>
 </html>
